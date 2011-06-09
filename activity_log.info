@@ -1,0 +1,5 @@
+name = Rules Activity Logging
+description = "Logs activity using Rules."
+dependencies[] = rules
+dependencies[] = token
+core = 6.x

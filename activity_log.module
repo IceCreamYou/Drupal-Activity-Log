@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * @file
+ *   Logs activity on a site.
+ *
+ * @todo
+ *   - add Views integration
+ *   - add the ability to combine similar activity
+ *   - make the amount of time a record is cached configurable
+ *   - add comments on activity records
+ *   - add Flag integration
+ *   - add a page per activity record (for viewing full comment threads) with Pathauto integration
+ *   - allow adding multiple recipient types by showing a table of recipient (type)s and having an AJAX "add another" button
+ */
+
+// RENDER
+
+/**
+ * Implementation of hook_theme().
+ */
+function activity_log_theme($existing, $type, $theme, $path) {
+  return array(
+    'activity_log_item' => array(
+      'arguments' => array(
+        'aid' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
+ * Renders an individual activity log message.
+ */
+function theme_activity_log_item($aid) {
+  return '<div class="activity-log-item">'. activity_log_evaluate_record(activity_log_load($aid)) .'</div>';
+}
+
+/**
+ * Loads an activity log record.
+ */
+function activity_log_load($aid) {
+  rules_include('rules');
+  $record = db_fetch_object(db_query("SELECT * FROM {activity_log_events} e LEFT JOIN {activity_log_templates} t ON e.rule = t.rule WHERE e.aid = %d", $aid));
+  $record->eval_input = unserialize($record->eval_input);
+  if (class_exists('rules_variable')) {
+    $record->id_map = unserialize($record->id_map);
+  }
+  return $record;
+}
+
+/**
+ * Renders an activity record.
+ */
+function activity_log_evaluate_record($record) {
+  if ($cache = cache_get('aid '. $record->aid, 'cache_activity_log')) {
+    return $cache->data;
+  }
+  rules_include('rules');
+  $element = array('#settings' => array(
+    'template' => $record->template,
+    'rule' => $record->rule,
+    '#eval input' => $record->eval_input,
+  ));
+  $state = $record->id_map['state'];
+  foreach ($state['variables'] as $type => $info) {
+    $info->data->_data = activity_log_get_variable($type, $record->id_map);
+  }
+  rules_apply_input_evaluators($element, $state);
+  $text = $element['#settings']['template'];
+  $text = drupal_substr($text, 0, strrpos($text, '#activity_log_id_map:'));
+  cache_set('aid '. $record->aid, $text, 'cache_activity_log', CACHE_TEMPORARY);
+  return $text;
+}
+
+/**
+ * Loads an array of objects that Token will use for evaluation.
+ */
+function activity_log_get_variable($type, $id_map) {
+  if (class_exists($id_map[$type]['class'])) {
+    $object = new $id_map[$type]['class'];
+    return $object->load($id_map[$type]['id']);
+  }
+}

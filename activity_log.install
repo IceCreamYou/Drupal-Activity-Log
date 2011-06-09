@@ -1,0 +1,115 @@
+<?php
+
+/**
+ * @file
+ *   (Un)installs the Rules Activity Logging module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function activity_log_schema() {
+  $schema = array();
+  $schema['activity_log_templates'] = array(
+    'description' => 'Stores log templates.',
+    'fields' => array(
+      'tid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'The template ID.',
+      ),
+      'rule' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The rule with which this template is associated.',
+      ),
+      'template' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'The template.',
+      ),
+      'recipients' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'Something which, when evaluated, returns one or more recipients.',
+      ),
+      'eval_input' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'An array of the input evaluators to run over the template.',
+      ),
+    ),
+    'unique keys' => array(
+      'rule' => array('rule'),
+    ),
+    'primary key' => array('tid'),
+  );
+  $schema['activity_log_events'] = array(
+    'description' => 'Stores activity.',
+    'fields' => array(
+      'aid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'The activity ID.',
+      ),
+      'rule' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The rule with which this template is associated.',
+      ),
+      'recipient' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the entity in whose stream this record should appear.',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The type of recipient.',
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The time the activity occurred.',
+      ),
+      'id_map' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'Data used to generate tokens to interpret the message.',
+      ),
+    ),
+    'indexes' => array(
+      'recipient' => array('recipient'),
+      'created' => array('created'),
+    ),
+    'primary key' => array('aid'),
+  );
+  $schema['cache_activity_log'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_activity_log']['description'] = t('Cache table for processed activity records.');
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function activity_log_install() {
+  drupal_install_schema('activity_log');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function activity_log_uninstall() {
+  drupal_uninstall_schema('activity_log');
+}
