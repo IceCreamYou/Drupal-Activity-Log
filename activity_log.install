@@ -105,6 +105,9 @@ function activity_log_schema() {
  */
 function activity_log_install() {
   drupal_install_schema('activity_log');
+  drupal_set_message(st('The Rules Activity Log module was successfully installed.') .' '.
+    st('To begin recording activity messages, <a href="@rules">create a Rule</a> that executes the "Log Activity" action.', array('@rules' => url('admin/rules/trigger')))
+  );
 }
 
 /**
