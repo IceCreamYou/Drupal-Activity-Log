@@ -3,15 +3,6 @@
 /**
  * @file
  *   Logs activity on a site.
- *
- * @todo
- *   - add Views integration
- *   - add the ability to combine similar activity
- *   - make the amount of time a record is cached configurable
- *   - add comments on activity records
- *   - add Flag integration
- *   - add a page per activity record (for viewing full comment threads) with Pathauto integration
- *   - allow adding multiple recipient types by showing a table of recipient (type)s and having an AJAX "add another" button
  */
 
 // RENDER

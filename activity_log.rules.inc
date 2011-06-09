@@ -52,7 +52,7 @@ function activity_log_form_rules_admin_form_edit_submit($form, $form_state) {
 
 // RECORDING THE EVENT: STEP 2
 
-// INPUT EVALUATOIN: STEP 2 PART 1
+// INPUT EVALUATION: STEP 2 PART 1
 
 /**
  * Implementation of hook_rules_evaluator().
