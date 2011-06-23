@@ -28,53 +28,6 @@ function theme_activity_log_item($aid) {
 }
 
 /**
- * Loads an activity log record.
- */
-function activity_log_load($aid) {
-  rules_include('rules');
-  $record = db_fetch_object(db_query("SELECT * FROM {activity_log_events} e LEFT JOIN {activity_log_templates} t ON e.rule = t.rule WHERE e.aid = %d", $aid));
-  $record->eval_input = unserialize($record->eval_input);
-  if (class_exists('rules_variable')) {
-    $record->id_map = unserialize($record->id_map);
-  }
-  return $record;
-}
-
-/**
- * Renders an activity record.
- */
-function activity_log_evaluate_record($record) {
-  if ($cache = cache_get('aid '. $record->aid, 'cache_activity_log')) {
-    return $cache->data;
-  }
-  rules_include('rules');
-  $element = array('#settings' => array(
-    'template' => $record->template,
-    'rule' => $record->rule,
-    '#eval input' => $record->eval_input,
-  ));
-  $state = $record->id_map['state'];
-  foreach ($state['variables'] as $type => $info) {
-    $info->data->_data = activity_log_get_variable($type, $record->id_map);
-  }
-  rules_apply_input_evaluators($element, $state);
-  $text = $element['#settings']['template'];
-  $text = drupal_substr($text, 0, strrpos($text, '#activity_log_id_map:'));
-  cache_set('aid '. $record->aid, $text, 'cache_activity_log', CACHE_TEMPORARY);
-  return $text;
-}
-
-/**
- * Loads an array of objects that Token will use for evaluation.
- */
-function activity_log_get_variable($type, $id_map) {
-  if (class_exists($id_map[$type]['class'])) {
-    $object = new $id_map[$type]['class'];
-    return $object->load($id_map[$type]['id']);
-  }
-}
-
-/**
  * Implementation of hook_menu()
  */
 function activity_log_menu(){
@@ -131,9 +84,9 @@ function activity_log_pathauto($op) {
  * Inspired by the node implementation in pathauto_node.inc.
  */
 function activity_log_pathauto_bulkupdate() {
-  //Only generate aliases for types with patterns defined.
+  // Only generate aliases for types with patterns defined.
   $pattern_types = array();
-  //Check for generic pattern.
+  // Check for generic pattern.
   if (trim(variable_get('pathauto_activity_log_pattern', ''))) {
     $pattern_types = array('self', 'other');
   }
@@ -153,10 +106,10 @@ function activity_log_pathauto_bulkupdate() {
       WHERE alias.src IS NULL";
     $result = db_query_range($query, 0, variable_get('pathauto_max_bulk_update', 50));
     $placeholders = array();
-    while ($activityLog = db_fetch_object($result)) {
-      //pathauto.inc should already be included.
-      $placeholders = pathauto_get_placeholders('activity_log', $activityLog);
-      $source = 'activity/'. $activityLog->aid;
+    while ($activity_log = db_fetch_object($result)) {
+      // pathauto.inc should already be included.
+      $placeholders = pathauto_get_placeholders('activity_log', $activity_log);
+      $source = 'activity/'. $activity_log->aid;
       if (pathauto_create_alias('activity_log', 'bulkupdate', $placeholders, $source, $type)) {
         $count++;
       }
@@ -177,4 +130,55 @@ function facebook_status_path_alias_types() {
   return array(
     'activity/' => t('Activity Logs'),
   );
+}
+
+//=================
+//MODULE FUNCTIONS.
+//=================
+
+/**
+ * Loads an activity log record.
+ */
+function activity_log_load($aid) {
+  rules_include('rules');
+  $record = db_fetch_object(db_query("SELECT * FROM {activity_log_events} e LEFT JOIN {activity_log_templates} t ON e.rule = t.rule WHERE e.aid = %d", $aid));
+  $record->eval_input = unserialize($record->eval_input);
+  if (class_exists('rules_variable')) {
+    $record->id_map = unserialize($record->id_map);
+  }
+  return $record;
+}
+
+/**
+ * Renders an activity record.
+ */
+function activity_log_evaluate_record($record) {
+  if ($cache = cache_get('aid '. $record->aid, 'cache_activity_log')) {
+    return $cache->data;
+  }
+  rules_include('rules');
+  $element = array('#settings' => array(
+    'template' => $record->template,
+    'rule' => $record->rule,
+    '#eval input' => $record->eval_input,
+  ));
+  $state = $record->id_map['state'];
+  foreach ($state['variables'] as $type => $info) {
+    $info->data->_data = activity_log_get_variable($type, $record->id_map);
+  }
+  rules_apply_input_evaluators($element, $state);
+  $text = $element['#settings']['template'];
+  $text = drupal_substr($text, 0, strrpos($text, '#activity_log_id_map:'));
+  cache_set('aid '. $record->aid, $text, 'cache_activity_log', CACHE_TEMPORARY);
+  return $text;
+}
+
+/**
+ * Loads an array of objects that Token will use for evaluation.
+ */
+function activity_log_get_variable($type, $id_map) {
+  if (class_exists($id_map[$type]['class'])) {
+    $object = new $id_map[$type]['class'];
+    return $object->load($id_map[$type]['id']);
+  }
 }
