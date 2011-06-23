@@ -34,10 +34,6 @@ function activity_log_perm() {
 
 /**
  * Determines whether the current user has access to view this activity record.
- *
- * TODO: When we add edit/delete pages we will also need edit/delete
- * permissions -- model the access control system after Facebook-style
- * Statuses.
  */
 function activity_log_access_item($record) {
   return ($record->type == 'user' && $record->recipient == $GLOBALS['user']->uid && user_access('view own activity log')) ||
