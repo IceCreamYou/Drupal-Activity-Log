@@ -79,12 +79,13 @@ function activity_log_input_evaluator_process_prepare($string, $variables) {
 function activity_log_input_evaluator_process_apply($string, $data = NULL, &$state, $return_output = TRUE) {
   $map = array();
   foreach ($state['variables'] as $name => $info) {
-    $class = $info->data->_data->class;
-    $map[$name] = array(
-      'id' => activity_log_get_id($info->data->_data),
-      'type' => $info->info['type'],
-      'class' => (empty($class) ? 'rules_data_type_'. $info->info['type'] : $class),
-    );
+    if (!empty($info->data)) {
+      $map[$name] = array(
+        'id' => activity_log_get_id($info->data->_data),
+        'type' => $info->info['type'],
+        'class' => (empty($info->data->_data->class) ? 'rules_data_type_'. $info->info['type'] : $info->data->_data->class),
+      );
+    }
   }
   $map['state'] = $state;
   return $string .'#activity_log_id_map:'. serialize($map);
