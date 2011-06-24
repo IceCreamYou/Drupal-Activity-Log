@@ -25,11 +25,25 @@ function activity_log_form_rules_admin_form_edit_alter($form, $form_state) {
     $form['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
   }
 }
+function activity_log_form_rules_admin_form_add_alter($form, $form_state) {
+  // If this is the Activity Log action:
+  if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
+    // Remove the help for our input evaluator. It's internal, not user-facing.
+    unset($form['input_help']['activity_log_input_evaluator_process']);
+    // Put the rule name in the settings so we have access to it when the action callback runs.
+    $form_state['storage']['element']['#settings']['rule'] = $form_state['proxy']->_rule_name;
+    // Run our custom submit hook.
+    $form['submit']['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
+    $form['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
+  }
+}
+
 
 /**
- * Submit callback for the Rules action form.
+ * Submit callback for the Rules action edit form.
  */
 function activity_log_form_rules_admin_form_edit_submit($form, $form_state) {
+  dsm('editing...');
   $rule = $form_state['proxy']->_rule_name;
   $template = $form_state['values']['settings']['template'];
   $recipient = $form_state['values']['settings']['recipient'];
