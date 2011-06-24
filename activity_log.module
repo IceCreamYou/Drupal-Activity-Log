@@ -149,6 +149,29 @@ function facebook_status_path_alias_types() {
   );
 }
 
+//==================
+//TOKEN INTEGRATION.
+//==================
+function activity_log_token_list($type = 'all') {
+  if($type == 'activity_log' || $type == 'all'){
+    $tokens = array(
+      'activity_log' => array(
+        'activity-id' => t('The ID of the logged activity'),
+      ),
+    );
+    return $tokens;
+  }
+}
+
+function activity_log_token_values($type, $object = NULL, $options = array()){
+  if($type == 'activity_log'){
+    $tokens = array(
+      'activity-id' => $object->aid,
+    );
+    return $tokens;
+  }
+}
+
 //=================
 //MODULE FUNCTIONS.
 //=================

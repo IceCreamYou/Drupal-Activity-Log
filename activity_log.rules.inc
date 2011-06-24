@@ -43,7 +43,6 @@ function activity_log_form_rules_admin_form_add_alter($form, $form_state) {
  * Submit callback for the Rules action edit form.
  */
 function activity_log_form_rules_admin_form_edit_submit($form, $form_state) {
-  dsm('editing...');
   $rule = $form_state['proxy']->_rule_name;
   $template = $form_state['values']['settings']['template'];
   $recipient = $form_state['values']['settings']['recipient'];
