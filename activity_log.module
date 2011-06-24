@@ -60,22 +60,6 @@ function theme_activity_log_item($aid) {
   return '<div class="activity-log-item">'. activity_log_evaluate_record(activity_log_load($aid)) .'</div>';
 }
 
-/**
- * Implementation of hook_menu()
- */
-function activity_log_menu(){
-
-  $items = array();
-  
-  $items['activity/%activity_log'] = array(
-    'title' => 'Activity log placeholder title',
-    'page_callback' => 'theme',
-    'page_arguments' => array('activity_log_item', 1),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-}
-
 //=====================
 //PATHAUTO INTEGRATION.
 //=====================
