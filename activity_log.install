@@ -42,13 +42,10 @@ function activity_log_schema() {
         'description' => 'An array of the input evaluators to run over the template.',
       ),
     ),
-    'unique keys' => array(
-      'rule' => array('rule'),
-    ),
     'primary key' => array('tid'),
   );
   $schema['activity_log_events'] = array(
-    'description' => 'Stores activity.',
+    'description' => 'Stores activity records.',
     'fields' => array(
       'aid' => array(
         'type' => 'serial',
@@ -56,12 +53,39 @@ function activity_log_schema() {
         'unsigned' => TRUE,
         'description' => 'The activity ID.',
       ),
-      'rule' => array(
-        'type' => 'varchar',
-        'length' => '255',
+      'tid' => array(
+        'type' => 'int',
         'not null' => TRUE,
-        'default' => '',
-        'description' => 'The rule with which this template is associated.',
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The template ID.',
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The time the activity occurred.',
+      ),
+      'id_map' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'Data used to generate tokens to interpret the message.',
+      ),
+    ),
+    'indexes' => array(
+      'created' => array('created'),
+    ),
+    'primary key' => array('aid'),
+  );
+  $schema['activity_log_recipients'] = array(
+    'description' => 'Relates recipients to an activity record.',
+    'fields' => array(
+      'aid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'The activity ID.',
       ),
       'recipient' => array(
         'type' => 'int',
@@ -77,26 +101,12 @@ function activity_log_schema() {
         'default' => '',
         'description' => 'The type of recipient.',
       ),
-      'created' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The time the activity occurred.',
-      ),
-      'id_map' => array(
-        'type' => 'text',
-        'not null' => TRUE,
-        'description' => 'Data used to generate tokens to interpret the message.',
-      ),
     ),
     'indexes' => array(
+      'aid' => array('aid'),
       'recipient' => array('recipient'),
-      'created' => array('created'),
     ),
-    'primary key' => array('aid'),
   );
-  $schema['cache_activity_log'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_activity_log']['description'] = t('Cache table for processed activity records.');
   return $schema;
 }
 

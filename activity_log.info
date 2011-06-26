@@ -1,5 +1,6 @@
-name = Rules Activity Logging
+name = Activity Log
 description = "Logs activity using Rules."
 dependencies[] = rules
 dependencies[] = token
+dependencies[] = views
 core = 6.x

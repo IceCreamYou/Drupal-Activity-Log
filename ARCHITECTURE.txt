@@ -1,17 +1,12 @@
 Administrators can specify what kind of activity gets logged by setting up
 Rules that will log activity messages. This is done by adding the "Log
-activity" action to a Rule. This action has two settings: the message template
+Activity" action to a Rule. This action has two settings: the message template
 and the recipients. When the form is saved, we save a record in the database
 associating these with the rule that will trigger the action.
 
 When the rule actually gets triggered, we evaluate the recipients as defined
 in the rule (above) and store an activity record in the database for each of
-them. The record that gets stored contains the rule that triggered the event,
-the recipient of that particular message, the time the event occurred, and an
-array of information used to dynamically evaluate the message (e.g. replacing
-tokens or executing PHP) when it eventually gets displayed.
-
-When the activity record is displayed, we load the template and this extra
+them. When the activity record is displayed, we load the template and this extra
 information relevant to the event, and then evaluate the template.
 
 The tricky part in all of this is obtaining the information we need to store
@@ -25,17 +20,21 @@ In the first stage, we have to bypass the usual method of adding fields to a
 Rules form, and instead alter the form so we have full access to all the
 information the form has. We use this to keep track of what rule we are working
 on and the input evaluators we will use to evaluate the template when it is
-displayed.
+displayed. Activity Log defines an input evaluator that runs in the second and
+third steps, and that input evaluator needs to know that it should only run on
+activity templates, so we concatenate a special string to the beginning of the
+template.
 
 In the second stage, we get the rule and recipients thanks to our work in the
 first stage, but we also have to utilize an input evaluator to figure out what
 objects are relevant to that event. When the input evaluator runs, it builds an
 array of these objects and appends a serialized version to the template so that
-we can retrieve it later when the action callback runs. At that point we can
-finally collect all the information we've gathered and save it as an event.
+we can retrieve it later when the action callback runs. (Thanks to our work in
+the first stage, this information is *only* appended to the template.) At that
+point we can collect all the information we've gathered and save it as
+an event.
 
 When the activity record is rendered, we have to dynamically load the objects
 we previously figured out were interesting, which we do by identifying the
-Rules data type of the object and using its load() property. We then execute
-the Rules input evaluators to produce the final rendered log. This is cached
-to reduce the overhead of generating it every time it is viewed.
+Rules data type of the objects and using their load() property. We then execute
+the Rules input evaluators to produce the final rendered log.

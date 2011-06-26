@@ -2,79 +2,91 @@
 
 /**
  * @file
- *   Rules integration for the Rules Activity Log module.
+ *   Rules integration for the Activity Log module.
  */
 
+//==================
 // ADMIN UI: STEP 1
+//==================
 
 /**
- * Implementation of hook_form_FORM_ID_alter().
+ * Implementation of hook_form_alter().
  *
- * Do some magic to the Rules action form so we can record all the data we need
- * about the template.
+ * Do some magic to the Rules Activity Log action form so we can record all the
+ * data we need about the template.
+ *
+ * We can put this in our rules.inc instead of .module file because the two
+ * forms we need to alter only exist when all rules.inc files have already been
+ * loaded.
  */
-function activity_log_form_rules_admin_form_edit_alter($form, $form_state) {
-  // If this is the Activity Log action:
-  if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
-    // Remove the help for our input evaluator. It's internal, not user-facing.
+function activity_log_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'rules_admin_form_edit' || $form_id == 'rules_admin_form_add') {
+    if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
+      // Run our custom submit hook.
+      array_unshift($form['submit']['#submit'], 'activity_log_rules_admin_form_submit');
+      // Undo the prefix to the template value that we added so the input evaluator knows this is the template.
+      if (isset($form['settings']['template']['#default_value'])) {
+        $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
+      }
+      $form['settings']['old_recipients'] = array(
+        '#type' => '#value',
+        '#value' => empty($form['settings']['recipients']['#default_value']) ? '' : $form['settings']['recipients']['#default_value'],
+      );
+    }
+    // Remove the help for our input evaluator (because it's internal, not user-facing).
     unset($form['input_help']['activity_log_input_evaluator_process']);
-    // Put the rule name in the settings so we have access to it when the action callback runs.
-    $form_state['storage']['element']['#settings']['rule'] = $form_state['proxy']->_rule_name;
-    // Run our custom submit hook.
-    $form['submit']['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
-    $form['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
   }
 }
-function activity_log_form_rules_admin_form_add_alter($form, $form_state) {
-  // If this is the Activity Log action:
-  if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
-    // Remove the help for our input evaluator. It's internal, not user-facing.
-    unset($form['input_help']['activity_log_input_evaluator_process']);
-    // Put the rule name in the settings so we have access to it when the action callback runs.
-    $form_state['storage']['element']['#settings']['rule'] = $form_state['proxy']->_rule_name;
-    // Run our custom submit hook.
-    $form['submit']['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
-    $form['#submit'][] = 'activity_log_form_rules_admin_form_edit_submit';
-  }
-}
-
 
 /**
  * Submit callback for the Rules action edit form.
+ *
+ * Record all of the information we need about a template.
  */
-function activity_log_form_rules_admin_form_edit_submit($form, $form_state) {
+function activity_log_rules_admin_form_submit($form, &$form_state) {
   $rule = $form_state['proxy']->_rule_name;
   $template = $form_state['values']['settings']['template'];
   $recipient = $form_state['values']['settings']['recipient'];
   $eval_input = $form_state['element']['#settings']['#eval input'];
-  $tid = db_result(db_query("SELECT tid FROM {activity_log_templates} WHERE rule = '%s'", $rule));
+  $tid = db_result(db_query("
+    SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND recipients = '%s'
+  ", $rule, $form_state['values']['settings']['old_recipients']));
   $record = (object) array(
     'rule' => $rule,
     'template' => $template,
     'recipients' => $recipient,
     'eval_input' => serialize($eval_input),
   );
-  if ($tid) {
+  if (!empty($tid)) {
     $record->tid = $tid;
     drupal_write_record('activity_log_templates', $record, array('tid'));
   }
   else {
     drupal_write_record('activity_log_templates', $record);
   }
+  // Designate that the template should be processed later in activity_log_input_evaluator_process_apply().
+  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
+  $form_state['values']['settings']['tid'] = $record->tid;
 }
 
+//=============================
 // RECORDING THE EVENT: STEP 2
+//=============================
 
 // INPUT EVALUATION: STEP 2 PART 1
 
 /**
  * Implementation of hook_rules_evaluator().
+ *
+ * We use a heavy weight so that we run last. We want to run last because we
+ * add text to the end of the string that should not be evaluated by other
+ * input evaluators.
  */
 function activity_log_rules_evaluator() {
   return array(
     'activity_log_input_evaluator_process' => array(
-      'label' => t('Rules Activity Log'),
-      'weight' => 0, // Run after Token (-5).
+      'label' => t('Activity Log'),
+      'weight' => 100,
     ),
   );
 }
@@ -88,8 +100,24 @@ function activity_log_input_evaluator_process_prepare($string, $variables) {
 
 /**
  * Implementation of callback_apply().
+ *
+ * Get information about all the variables that should be available when
+ * evaluating input and make it available somewhere we have access to in the
+ * action callback.
  */
 function activity_log_input_evaluator_process_apply($string, $data = NULL, &$state, $return_output = TRUE) {
+  // This could happen on the recipient field when the input is PHP and we want to return an array of recipients.
+  if (is_array($string)) {
+    return $string;
+  }
+  // Only process the Log Activity action's Template setting.
+  if (strpos($string, ACTIVITY_LOG_DELIMITER) !== 0) {
+    return $string;
+  }
+  else {
+    $string = drupal_substr($string, drupal_strlen(ACTIVITY_LOG_DELIMITER));
+  }
+  // Get information about all the variables that should be available when evaluating input.
   $map = array();
   foreach ($state['variables'] as $name => $info) {
     if (!empty($info->data)) {
@@ -101,7 +129,13 @@ function activity_log_input_evaluator_process_apply($string, $data = NULL, &$sta
     }
   }
   $map['state'] = $state;
-  return $string .'#activity_log_id_map:'. serialize($map);
+  $serialized = serialize($map);
+  // Remove any instances of our delimiting string so we don't get anything mixed up.
+  if (strpos($serialized, ACTIVITY_LOG_DELIMITER) !== FALSE) {
+    str_replace(ACTIVITY_LOG_DELIMITER, substr_replace(ACTIVITY_LOG_DELIMITER, '#! ', 0, 2), $serialized);
+  }
+  // Store the variable information so we have it available in the action callback.
+  return $string . ACTIVITY_LOG_DELIMITER . $serialized;
 }
 
 /**
@@ -112,13 +146,15 @@ function activity_log_input_evaluator_process_apply($string, $data = NULL, &$sta
  * extract_id($object) property to its rules_data_type class.
  */
 function activity_log_get_id($data) {
-  foreach (array('nid', 'sid', 'cid', 'tid', 'vid', 'fid', 'rid', 'aid', 'eid', 'oid', 'uid') as $key) {
+  // See if any of a list of pre-determined IDs exists as a property of $the object.
+  foreach (array('tid', 'cid', 'nid', 'sid', 'vid', 'fid', 'rid', 'aid', 'eid', 'oid', 'uid') as $key) {
     if (isset($data->$key)) {
       return $data->$key;
     }
   }
+  // Look for a property that seems like it could be an ID.
   foreach ($data as $key => $value) {
-    if (drupal_strlen($key) < 5 && drupal_substr($key, -2) == 'id') {
+    if ((drupal_strlen($key) < 5 && drupal_substr($key, -2) == 'id') || drupal_substr($key, -3) == '_id') {
       return $value;
     }
   }
@@ -143,7 +179,7 @@ function activity_log_rules_action_info() {
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Rules Activity Logging',
-      'eval input' => array('template', 'recipient', 'type'),
+      'eval input' => array('template', 'recipient'),
     ),
   );
 }
@@ -164,12 +200,12 @@ function activity_log_log_action_form($settings, &$form) {
     '#type' => 'textarea',
     '#title' => t('Recipient(s)'),
     '#description' => t('Activity records generated from this template will appear in the stream of the entities specified here.') .' '.
-      t('Enter an ID or use PHP to return multiple IDs.'),
+      t('Enter an ID or use PHP to return multiple IDs if you want this action to appear in multiple streams.'),
     '#default_value' => $settings['recipient'],
-    '#rows' => 3,
+    '#rows' => 2,
     '#required' => TRUE,
   );
-  // @see _rules_admin_form_argument()
+  // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
   $options = rules_extract_property(array_filter(rules_get_data_types(), 'rules_admin_element_filter'), 'label');
   $options = array_map('drupal_ucfirst', $options);
   // It only makes sense to offer options that have their own unique pages.
@@ -200,26 +236,27 @@ function activity_log_log_action_form($settings, &$form) {
  * Log activity.
  */
 function activity_log_log_action($settings) {
-  $recipient = $settings['recipient'];
-  $pos = strrpos($settings['template'], '#activity_log_id_map:');
+  $time = time();
+  // Get the value of the settings set via the UI.
+  $pos = strrpos($settings['template'], ACTIVITY_LOG_DELIMITER);
   $message = drupal_substr($settings['template'], 0, $pos);
-  $map = drupal_substr($settings['template'], $pos + drupal_strlen('#activity_log_id_map:')); // serialized
+  $map = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER)); // serialized
+  $recipient = $settings['recipient'];
+  // Store the event record.
   $record = (object) array(
-    'rule' => $settings['rule'],
-    'type' => $settings['type'],
-    'created' => time(),
+    'tid' => $settings['tid'],
+    'created' => $time,
     'id_map' => $map,
   );
-  if (is_array($recipient)) {
-    foreach ($recipient as $re) {
-      $record->recipient = $re;
-      drupal_write_record('activity_log_events', $record);
-      cache_set('aid '. $record->aid, $message, 'cache_activity_log', CACHE_TEMPORARY);
-    }
-  }
-  else {
-    $record->recipient = $recipient;
-    drupal_write_record('activity_log_events', $record);
-    cache_set('aid '. $record->aid, $message, 'cache_activity_log', CACHE_TEMPORARY);
+  drupal_write_record('activity_log_events', $record);
+  // Store the record for each recipient. We could have multiple recipients if there was PHP in the recipient field that returned an array of IDs.
+  $recipient = (array) $recipient;
+  foreach ($recipient as $re) {
+    $r = (object) array(
+      'aid' => $record->aid,
+      'recipient' => $re,
+      'type' => $settings['type'],
+    );
+    drupal_write_record('activity_log_recipients', $r);
   }
 }

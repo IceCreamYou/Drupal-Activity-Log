@@ -2,16 +2,33 @@
 
 /**
  * @file
- *   Logs activity on a site.
+ *   Logs activity using Rules.
  */
+
+define(ACTIVITY_LOG_DELIMITER, '#!ACTIVITY_LOG_DELIMITER:');
+
+//============================
+// CORE HOOK IMPLEMENTATIONS.
+//============================
 
 /**
  * Implementation of hook_menu().
  */
 function activity_log_menu() {
   $items = array();
+  /*
+  $items['admin/settings/activity_log'] = array(
+    'title' => 'Activity Log',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('activity_log_admin'),
+    'access arguments' => array('administer site configuration'),
+    'description' => 'Allows administrators to adjust settings for Activity Log.',
+    'file' => 'activity_log.admin.inc',
+  );
+   */
   $items['activity/%activity_log'] = array(
-    'title' => 'Activity',
+    'title callback' => 'activity_log_title_callback',
+    'title arguments' => array(1),
     'description' => 'Displays an activity message.',
     'page callback' => 'theme',
     'page arguments' => array('activity_log_item', 1),
@@ -27,17 +44,9 @@ function activity_log_menu() {
  */
 function activity_log_perm() {
   return array(
-    'view all activity logs',
-    'view own activity log',
+    'view all activity messages',
+    'view own activity messages',
   );
-}
-
-/**
- * Determines whether the current user has access to view this activity record.
- */
-function activity_log_access_item($record) {
-  return ($record->type == 'user' && $record->recipient == $GLOBALS['user']->uid && user_access('view own activity log')) ||
-    user_access('view all activity logs');
 }
 
 /**
@@ -53,16 +62,176 @@ function activity_log_theme($existing, $type, $theme, $path) {
   );
 }
 
+//==================
+// THEME FUNCTIONS.
+//==================
+
 /**
  * Renders an individual activity log message.
+ *
+ * @param $record
+ *   A fully qualified activity record.
+ * @return
+ *   The themed activity message.
  */
-function theme_activity_log_item($aid) {
-  return '<div class="activity-log-item">'. activity_log_evaluate_record(activity_log_load($aid)) .'</div>';
+function theme_activity_log_item($record) {
+  return '<div class="activity-message">'. activity_log_evaluate_record($record) .'</div>';
 }
 
-//=====================
-//PATHAUTO INTEGRATION.
-//=====================
+//====================================
+// APPLICATION PROGRAMMING INTERFACE.
+//====================================
+
+/**
+ * Loads an activity log record.
+ *
+ * @param $aid
+ *   The ID of the activity record to load.
+ * @param $load_recipients
+ *   If TRUE, an array of recipients will be included in the "streams"
+ *   property.
+ * @return
+ *   A full Activity record.
+ */
+function activity_log_load($aid, $load_recipients = FALSE) {
+  rules_include('rules');
+  $record = db_fetch_object(db_query("
+    SELECT *
+    FROM {activity_log_events} e
+    LEFT JOIN {activity_log_templates} t
+      ON e.tid = t.tid
+    WHERE e.aid = %d
+  ", $aid));
+  $record->eval_input = unserialize($record->eval_input);
+  if (class_exists('rules_variable')) {
+    $record->id_map = unserialize($record->id_map);
+  }
+  if ($load_recipients) {
+    // The "recipients" property is already used.
+    $record->streams = activity_log_recipients_load($aid);
+  }
+  return $record;
+}
+
+/**
+ * Load an array of the recipients of an activity record.
+ *
+ * @param $aid
+ *   The ID of the activity record for which recipients will be loaded.
+ * @return
+ *   An array of recipient objects, where each recipient has a "rid" property
+ *   (the ID) and a "type" property (the type).
+ */
+function activity_log_recipients_load($aid) {
+  $result = db_query("SELECT recipient AS rid, type FROM {activity_log_recipients} WHERE aid = %d", $aid);
+  $recipients = array();
+  while ($recipient = db_fetch_object($result)) {
+    $recipients[] = $recipient;
+  }
+  return $recipients;
+}
+
+/**
+ * Evaluate the template for a given activity record.
+ *
+ * @param $record
+ *   The activity record whose template should be evaluated.
+ * @return
+ *   The text of an activity message.
+ */
+function activity_log_evaluate_record($record) {
+  $time = time();
+  rules_include('rules');
+  // Get the stored data we need to apply the Rules input evaluators.
+  $element = array('#settings' => array(
+    'template' => $record->template,
+    'tid' => $record->tid,
+    '#eval input' => $record->eval_input,
+  ));
+  // Reconstruct the Rules State as if the event was triggered just now.
+  $state = $record->id_map['state'];
+  foreach ($state['variables'] as $type => $info) {
+    $info->data->_data = activity_log_get_variable($type, $record->id_map);
+  }
+  // Apply the Rules input evaluators.
+  rules_apply_input_evaluators($element, $state);
+  // Return the evaluated template.
+  return $element['#settings']['template'];
+}
+
+//===================
+// HELPER FUNCTIONS.
+//===================
+
+/**
+ * Load an object in its current state so that we can replace the old version.
+ *
+ * It is mostly important to do this so that Token executes the correct
+ * replacements. We load the new objects by identifying their Rules class type
+ * and executing its load() method.
+ */
+function activity_log_get_variable($type, $id_map) {
+  if (class_exists($id_map[$type]['class'])) {
+    $object = new $id_map[$type]['class'];
+    return $object->load($id_map[$type]['id']);
+  }
+}
+
+//=================
+// MENU CALLBACKS.
+//=================
+
+/**
+ * Determines the title to display on an individual activity page.
+ *
+ * @param $record
+ *   A fully qualified activity record.
+ * @return
+ *   A string for the title of an activity page.
+ */
+function activity_log_title_callback($record) {
+  $message = t('Activity');
+  if (empty($record->streams)) {
+    $record->streams = activity_log_recipients_load($record->aid);
+  }
+  $recipient = array_shift($record->streams);
+  if (!empty($recipient)) {
+    if ($recipient->type == 'user') {
+      $account = user_load($recipient->rid);
+      $message = t("@name's activity", array('@name' => $account->name));
+    }
+    elseif ($recipient->type == 'node') {
+      $node = node_load($recipient->rid);
+      $message = t("Activity on @title", array('@title' => $node->title));
+    }
+  }
+  return $message;
+}
+
+/**
+ * Determines whether the current user has access to view this activity record.
+ *
+ * @param $record
+ *   The activity record to which access is requested.
+ * @param $account
+ *   (Optional) The account of the user requesting access. Defaults to the
+ *   current user.
+ * @return
+ *   TRUE if access is permitted; FALSE otherwise.
+ */
+function activity_log_access_item($record, $account = NULL) {
+  // Default to the current user.
+  if (empty($account)) {
+    $account = $GLOBALS['user'];
+  }
+  // Grant access to the intended recipient and administrators.
+  return ($record->type == 'user' && $record->recipient == $account->uid && user_access('view own activity messages', $account)) ||
+    user_access('view all activity messages', $account);
+}
+
+//=======================
+// PATHAUTO INTEGRATION.
+//=======================
 
 /**
  * Implementation of hook_pathauto().
@@ -83,16 +252,12 @@ function activity_log_pathauto($op) {
   return (object) array(
     'module' => 'activity_log',
     'token_type' => 'activity_log',
-    'groupheader' => t('Activity log settings'),
-    'patterndefault' => '', //No aliases should be generated
-    'patterndescr' => t('Default path pattern (applies to all activity logs with blank patterns below)'),
+    'groupheader' => t('Activity Log settings'),
+    'patterndefault' => '', // No aliases should be generated by default.
+    'patterndescr' => t('Default path pattern'),
     'placeholders' => $placeholders,
-    /*'patternitems' => array(
-      'self' => t('Own activity logs'),
-      'other' => t('Activity logs of other users'),
-    ),*/
-    'bulkname' => t('Bulk update activity log paths'),
-    'bulkdescr' => t('Generate aliases for all existing activity logs which do not already have aliases.'),
+    'bulkname' => t('Bulk update Activity Log paths'),
+    'bulkdescr' => t('Generate aliases for all existing activity records which do not already have aliases.'),
   );
 }
 
@@ -101,43 +266,30 @@ function activity_log_pathauto($op) {
  * Inspired by the node implementation in pathauto_node.inc.
  */
 function activity_log_pathauto_bulkupdate() {
-  // Only generate aliases for types with patterns defined.
-  $pattern_types = array();
-  // Check for generic pattern.
-  if (trim(variable_get('pathauto_activity_log_pattern', ''))) {
-    $pattern_types = array('self', 'other');
-  }
-  else {
-   foreach (array('self', 'other') as $type) {
-      if (trim(variable_get('pathauto_activity_log_'. $type .'_pattern', ''))) {
-       $pattern_types[$type] = $type;
-     }
-   }
-  }
+  // Get all activity records that have no path alias.
+  $result = db_query_range("
+    SELECT al.*, alias.src, alias.dst
+    FROM {activity_log_events} al
+    LEFT JOIN {url_alias} alias
+      ON CONCAT('activity/', CAST(al.aid AS CHAR)) = alias.src
+    WHERE alias.src IS NULL
+  ", 0, variable_get('pathauto_max_bulk_update', 50));
+  // Set an alias for these records.
   $count = 0;
-  if (count($pattern_types)) {
-    $query = "SELECT al.*, alias.src, alias.dst
-      FROM {activity_log_events} al
-      LEFT JOIN {url_alias} alias
-        ON CONCAT('activity/', CAST(al.aid AS CHAR)) = alias.src
-      WHERE alias.src IS NULL";
-    $result = db_query_range($query, 0, variable_get('pathauto_max_bulk_update', 50));
-    $placeholders = array();
-    while ($activity_log = db_fetch_object($result)) {
-      // pathauto.inc should already be included.
-      $placeholders = pathauto_get_placeholders('activity_log', $activity_log);
-      $source = 'activity/'. $activity_log->aid;
-      if (pathauto_create_alias('activity_log', 'bulkupdate', $placeholders, $source, $type)) {
-        $count++;
-      }
+  $placeholders = array();
+  while ($activity_log = db_fetch_object($result)) {
+    // We can call this function because pathauto.inc should already be included.
+    $placeholders = pathauto_get_placeholders('activity_log', $activity_log);
+    $source = 'activity/'. $activity_log->aid;
+    if (pathauto_create_alias('activity_log', 'bulkupdate', $placeholders, $source, $type)) {
+      $count++;
     }
   }
-
+  // Report what we just did.
   drupal_set_message(format_plural($count,
     'Bulk generation of aliases for activity logs completed: one alias generated.',
     'Bulk generation of aliases for activity logs completed: @count aliases generated.'
   ));
-
 }
 
 /**
@@ -145,80 +297,51 @@ function activity_log_pathauto_bulkupdate() {
  */
 function facebook_status_path_alias_types() {
   return array(
-    'activity/' => t('Activity Logs'),
+    'activity/' => t('Activity message'),
   );
 }
 
-//==================
-//TOKEN INTEGRATION.
-//==================
+//====================
+// TOKEN INTEGRATION.
+//====================
+
+/**
+ * Implementation of hook_token_list().
+ */
 function activity_log_token_list($type = 'all') {
-  if($type == 'activity_log' || $type == 'all'){
+  if ($type == 'activity_log') {
     $tokens = array(
       'activity_log' => array(
         'activity-id' => t('The ID of the logged activity'),
+        'activity-objects' => t('A comma-separated list of the types of objects the activity is about.'),
+        'activity-template-id' => t('The ID of the template used to generate the activity message.'),
+        'activity-message' => t('The full activity message.'),
+        'activity-message-clean' => t('The activity message with no HTML tags. Useful in URLs.'),
+        'activity-message-clean-40' => t('The activity message with no HTML tags, cut off at 40 characters. Useful in URLs.'),
       ),
     );
     return $tokens;
   }
 }
 
+/**
+ * Implementation of hook_token_values().
+ */
 function activity_log_token_values($type, $object = NULL, $options = array()){
-  if($type == 'activity_log'){
+  if ($type == 'activity_log') {
+    $keys = array_keys($object->id_map);
+    array_pop($keys); // Remove the "state" key
+    $activity_objects = implode(',', $keys);
+    $message = activity_log_evaluate_record($object);
     $tokens = array(
       'activity-id' => $object->aid,
+      'activity-objects' => $activity_objects,
+      'activity-template-id' => $activity->tid,
+      'activity-message' => $message,
+      'activity-message-clean' => strip_tags($message),
+      'activity-message-clean-40' => drupal_substr(strip_tags($message), 0, 40),
     );
+    $tokens += token_get_date_token_values($object->created, 'created-');
     return $tokens;
-  }
-}
-
-//=================
-//MODULE FUNCTIONS.
-//=================
-
-/**
- * Loads an activity log record.
- */
-function activity_log_load($aid) {
-  rules_include('rules');
-  $record = db_fetch_object(db_query("SELECT * FROM {activity_log_events} e LEFT JOIN {activity_log_templates} t ON e.rule = t.rule WHERE e.aid = %d", $aid));
-  $record->eval_input = unserialize($record->eval_input);
-  if (class_exists('rules_variable')) {
-    $record->id_map = unserialize($record->id_map);
-  }
-  return $record;
-}
-
-/**
- * Renders an activity record.
- */
-function activity_log_evaluate_record($record) {
-  if ($cache = cache_get('aid '. $record->aid, 'cache_activity_log')) {
-    return $cache->data;
-  }
-  rules_include('rules');
-  $element = array('#settings' => array(
-    'template' => $record->template,
-    'rule' => $record->rule,
-    '#eval input' => $record->eval_input,
-  ));
-  $state = $record->id_map['state'];
-  foreach ($state['variables'] as $type => $info) {
-    $info->data->_data = activity_log_get_variable($type, $record->id_map);
-  }
-  rules_apply_input_evaluators($element, $state);
-  $text = $element['#settings']['template'];
-  $text = drupal_substr($text, 0, strrpos($text, '#activity_log_id_map:'));
-  cache_set('aid '. $record->aid, $text, 'cache_activity_log', CACHE_TEMPORARY);
-  return $text;
-}
-
-/**
- * Loads an array of objects that Token will use for evaluation.
- */
-function activity_log_get_variable($type, $id_map) {
-  if (class_exists($id_map[$type]['class'])) {
-    $object = new $id_map[$type]['class'];
-    return $object->load($id_map[$type]['id']);
   }
 }
