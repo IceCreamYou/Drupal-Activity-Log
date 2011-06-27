@@ -22,16 +22,14 @@
 function activity_log_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'rules_admin_form_edit' || $form_id == 'rules_admin_form_add') {
     if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
-      // Run our custom submit hook.
-      array_unshift($form['submit']['#submit'], 'activity_log_rules_admin_form_submit');
+      // Run our custom submit hooks.
+      array_unshift($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_before');
+      array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_after');
       // Undo the prefix to the template value that we added so the input evaluator knows this is the template.
       if (isset($form['settings']['template']['#default_value'])) {
         $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
       }
-      $form['settings']['old_recipients'] = array(
-        '#type' => '#value',
-        '#value' => empty($form['settings']['recipients']['#default_value']) ? '' : $form['settings']['recipients']['#default_value'],
-      );
+      $form['#old_stream_owner'] = empty($form['settings']['stream_owner']['#default_value']) ? '' : $form['settings']['stream_owner']['#default_value'];
     }
     // Remove the help for our input evaluator (because it's internal, not user-facing).
     unset($form['input_help']['activity_log_input_evaluator_process']);
@@ -41,21 +39,29 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Submit callback for the Rules action edit form.
  *
+ * Designate that the template should be processed later in
+ * activity_log_input_evaluator_process_apply().
+ */
+function activity_log_rules_admin_form_submit_before($form, &$form_state) {
+  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
+}
+
+/**
+ * Submit callback for the Rules action edit form.
+ *
  * Record all of the information we need about a template.
  */
-function activity_log_rules_admin_form_submit($form, &$form_state) {
+function activity_log_rules_admin_form_submit_after($form, &$form_state) {
   $rule = $form_state['proxy']->_rule_name;
   $template = $form_state['values']['settings']['template'];
-  $recipient = $form_state['values']['settings']['recipient'];
-  $eval_input = $form_state['element']['#settings']['#eval input'];
   $tid = db_result(db_query("
-    SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND recipients = '%s'
-  ", $rule, $form_state['values']['settings']['old_recipients']));
+    SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
+  ", $rule, $form['#old_stream_owner']));
   $record = (object) array(
     'rule' => $rule,
-    'template' => $template,
-    'recipients' => $recipient,
-    'eval_input' => serialize($eval_input),
+    'template' => drupal_substr($template, drupal_strlen(ACTIVITY_LOG_DELIMITER)),
+    'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
+    'eval_input' => serialize($form_state['element']['#settings']['#eval input']),
   );
   if (!empty($tid)) {
     $record->tid = $tid;
@@ -64,8 +70,6 @@ function activity_log_rules_admin_form_submit($form, &$form_state) {
   else {
     drupal_write_record('activity_log_templates', $record);
   }
-  // Designate that the template should be processed later in activity_log_input_evaluator_process_apply().
-  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
   $form_state['values']['settings']['tid'] = $record->tid;
 }
 
@@ -106,10 +110,6 @@ function activity_log_input_evaluator_process_prepare($string, $variables) {
  * action callback.
  */
 function activity_log_input_evaluator_process_apply($string, $data = NULL, &$state, $return_output = TRUE) {
-  // This could happen on the recipient field when the input is PHP and we want to return an array of recipients.
-  if (is_array($string)) {
-    return $string;
-  }
   // Only process the Log Activity action's Template setting.
   if (strpos($string, ACTIVITY_LOG_DELIMITER) !== 0) {
     return $string;
@@ -178,8 +178,8 @@ function activity_log_rules_action_info() {
   return array(
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
-      'module' => 'Rules Activity Logging',
-      'eval input' => array('template', 'recipient'),
+      'module' => 'Activity Log',
+      'eval input' => array('template', 'stream_owner'),
     ),
   );
 }
@@ -188,7 +188,7 @@ function activity_log_rules_action_info() {
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
-  $settings += array('template' => '', 'recipient' => '', 'type' => 'user');
+  $settings += array('template' => '', 'stream_owner' => '', 'type' => 'user');
   $form['settings']['template'] = array(
     '#type' => 'textarea',
     '#title' => t('Activity message'),
@@ -196,13 +196,11 @@ function activity_log_log_action_form($settings, &$form) {
     '#rows' => 3,
     '#required' => TRUE,
   );
-  $form['settings']['recipient'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Recipient(s)'),
-    '#description' => t('Activity records generated from this template will appear in the stream of the entities specified here.') .' '.
-      t('Enter an ID or use PHP to return multiple IDs if you want this action to appear in multiple streams.'),
-    '#default_value' => $settings['recipient'],
-    '#rows' => 2,
+  $form['settings']['stream_owner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Stream owner'),
+    '#description' => t('Enter the ID of the entity in whose activity stream the activity records generated from this template should appear.'),
+    '#default_value' => $settings['stream_owner'],
     '#required' => TRUE,
   );
   // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
@@ -224,7 +222,7 @@ function activity_log_log_action_form($settings, &$form) {
   asort($options);
   $form['settings']['type'] = array(
     '#type' => 'select',
-    '#title' => t('Recipient type'),
+    '#title' => t('Stream type'),
     '#description' => t('The type of entity on whose stream the activity record will appear.'),
     '#default_value' => $settings['type'],
     '#options' => $options,
@@ -241,22 +239,13 @@ function activity_log_log_action($settings) {
   $pos = strrpos($settings['template'], ACTIVITY_LOG_DELIMITER);
   $message = drupal_substr($settings['template'], 0, $pos);
   $map = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER)); // serialized
-  $recipient = $settings['recipient'];
   // Store the event record.
   $record = (object) array(
     'tid' => $settings['tid'],
     'created' => $time,
+    'stream_owner_id' => $settings['stream_owner'],
+    'stream_owner_type' => $settings['type'],
     'id_map' => $map,
   );
   drupal_write_record('activity_log_events', $record);
-  // Store the record for each recipient. We could have multiple recipients if there was PHP in the recipient field that returned an array of IDs.
-  $recipient = (array) $recipient;
-  foreach ($recipient as $re) {
-    $r = (object) array(
-      'aid' => $record->aid,
-      'recipient' => $re,
-      'type' => $settings['type'],
-    );
-    drupal_write_record('activity_log_recipients', $r);
-  }
 }

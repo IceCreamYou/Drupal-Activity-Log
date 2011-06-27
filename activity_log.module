@@ -87,13 +87,10 @@ function theme_activity_log_item($record) {
  *
  * @param $aid
  *   The ID of the activity record to load.
- * @param $load_recipients
- *   If TRUE, an array of recipients will be included in the "streams"
- *   property.
  * @return
  *   A full Activity record.
  */
-function activity_log_load($aid, $load_recipients = FALSE) {
+function activity_log_load($aid) {
   rules_include('rules');
   $record = db_fetch_object(db_query("
     SELECT *
@@ -106,29 +103,7 @@ function activity_log_load($aid, $load_recipients = FALSE) {
   if (class_exists('rules_variable')) {
     $record->id_map = unserialize($record->id_map);
   }
-  if ($load_recipients) {
-    // The "recipients" property is already used.
-    $record->streams = activity_log_recipients_load($aid);
-  }
   return $record;
-}
-
-/**
- * Load an array of the recipients of an activity record.
- *
- * @param $aid
- *   The ID of the activity record for which recipients will be loaded.
- * @return
- *   An array of recipient objects, where each recipient has a "rid" property
- *   (the ID) and a "type" property (the type).
- */
-function activity_log_recipients_load($aid) {
-  $result = db_query("SELECT recipient AS rid, type FROM {activity_log_recipients} WHERE aid = %d", $aid);
-  $recipients = array();
-  while ($recipient = db_fetch_object($result)) {
-    $recipients[] = $recipient;
-  }
-  return $recipients;
 }
 
 /**
@@ -191,19 +166,13 @@ function activity_log_get_variable($type, $id_map) {
  */
 function activity_log_title_callback($record) {
   $message = t('Activity');
-  if (empty($record->streams)) {
-    $record->streams = activity_log_recipients_load($record->aid);
+  if ($record->stream_owner_type == 'user') {
+    $account = user_load($record->stream_owner_id);
+    $message = t("@name's activity", array('@name' => $account->name));
   }
-  $recipient = array_shift($record->streams);
-  if (!empty($recipient)) {
-    if ($recipient->type == 'user') {
-      $account = user_load($recipient->rid);
-      $message = t("@name's activity", array('@name' => $account->name));
-    }
-    elseif ($recipient->type == 'node') {
-      $node = node_load($recipient->rid);
-      $message = t("Activity on @title", array('@title' => $node->title));
-    }
+  elseif ($record->stream_owner_type == 'node') {
+    $node = node_load($record->stream_owner_id);
+    $message = t("Activity on @title", array('@title' => $node->title));
   }
   return $message;
 }
@@ -224,8 +193,8 @@ function activity_log_access_item($record, $account = NULL) {
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  // Grant access to the intended recipient and administrators.
-  return ($record->type == 'user' && $record->recipient == $account->uid && user_access('view own activity messages', $account)) ||
+  // Grant access to the intended stream owner and administrators.
+  return ($record->stream_owner_type == 'user' && $record->stream_owner_id == $account->uid && user_access('view own activity messages', $account)) ||
     user_access('view all activity messages', $account);
 }
 
@@ -315,6 +284,8 @@ function activity_log_token_list($type = 'all') {
         'activity-id' => t('The ID of the logged activity'),
         'activity-objects' => t('A comma-separated list of the types of objects the activity is about.'),
         'activity-template-id' => t('The ID of the template used to generate the activity message.'),
+        'activity-stream-id' => t('The ID of the entity in whose stream the activity message appears.'),
+        'activity-stream-type' => t('The type of the entity in whose stream the activity message appears.'),
         'activity-message' => t('The full activity message.'),
         'activity-message-clean' => t('The activity message with no HTML tags. Useful in URLs.'),
         'activity-message-clean-40' => t('The activity message with no HTML tags, cut off at 40 characters. Useful in URLs.'),
@@ -337,6 +308,8 @@ function activity_log_token_values($type, $object = NULL, $options = array()){
       'activity-id' => $object->aid,
       'activity-objects' => $activity_objects,
       'activity-template-id' => $activity->tid,
+      'activity-stream-id' => $object->stream_owner_id,
+      'activity-stream-type' => $object->stream_owner_type,
       'activity-message' => $message,
       'activity-message-clean' => strip_tags($message),
       'activity-message-clean-40' => drupal_substr(strip_tags($message), 0, 40),

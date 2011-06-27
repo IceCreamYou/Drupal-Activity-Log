@@ -31,10 +31,12 @@ function activity_log_schema() {
         'not null' => TRUE,
         'description' => 'The template.',
       ),
-      'recipients' => array(
-        'type' => 'text',
+      'stream_owner_id_template' => array(
+        'type' => 'varchar',
+        'length' => '255',
         'not null' => TRUE,
-        'description' => 'Something which, when evaluated, returns one or more recipients.',
+        'default' => '',
+        'description' => 'Something which, when evaluated, returns the ID of the entity in whose stream messages using this template will appear.',
       ),
       'eval_input' => array(
         'type' => 'text',
@@ -67,6 +69,20 @@ function activity_log_schema() {
         'default' => 0,
         'description' => 'The time the activity occurred.',
       ),
+      'stream_owner_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the entity in whose stream this record should appear.',
+      ),
+      'stream_owner_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The entity type of the stream owner.',
+      ),
       'id_map' => array(
         'type' => 'text',
         'not null' => TRUE,
@@ -77,35 +93,6 @@ function activity_log_schema() {
       'created' => array('created'),
     ),
     'primary key' => array('aid'),
-  );
-  $schema['activity_log_recipients'] = array(
-    'description' => 'Relates recipients to an activity record.',
-    'fields' => array(
-      'aid' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'description' => 'The activity ID.',
-      ),
-      'recipient' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The ID of the entity in whose stream this record should appear.',
-      ),
-      'type' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'The type of recipient.',
-      ),
-    ),
-    'indexes' => array(
-      'aid' => array('aid'),
-      'recipient' => array('recipient'),
-    ),
   );
   return $schema;
 }
