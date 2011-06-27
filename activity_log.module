@@ -16,7 +16,6 @@ define(ACTIVITY_LOG_DELIMITER, '#!ACTIVITY_LOG_DELIMITER:');
  */
 function activity_log_menu() {
   $items = array();
-  /*
   $items['admin/settings/activity_log'] = array(
     'title' => 'Activity Log',
     'page callback' => 'drupal_get_form',
@@ -25,7 +24,6 @@ function activity_log_menu() {
     'description' => 'Allows administrators to adjust settings for Activity Log.',
     'file' => 'activity_log.admin.inc',
   );
-   */
   $items['activity/%activity_log'] = array(
     'title callback' => 'activity_log_title_callback',
     'title arguments' => array(1),
