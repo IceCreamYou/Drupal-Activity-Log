@@ -52,6 +52,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'rule' => $rule,
     'template' => $form_state['values']['settings']['template'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
+    'public_name' => $form_state['values']['settings']['public_name'],
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
   );
   if (!empty($tid)) {
@@ -192,7 +193,7 @@ function activity_log_rules_action_info() {
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
-  $settings += array('template' => '', 'stream_owner' => '', 'type' => 'user');
+  $settings += array('template' => '', 'stream_owner' => '', 'type' => 'user', 'public_name' => '');
   $form['settings']['template'] = array(
     '#type' => 'textarea',
     '#title' => t('Activity message'),
@@ -231,6 +232,15 @@ function activity_log_log_action_form($settings, &$form) {
     '#default_value' => $settings['type'],
     '#options' => $options,
     '#required' => TRUE,
+  );
+  $form['settings']['public_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Public name of this activity type'),
+    '#description' => t('The name of the activity as shown to users who have permission to disable certain activity types in their stream.') .' '.
+      t('Leave this field blank if you do not want to allow users to disable viewing messages about this activity type.') .' '.
+      t('This field does not accept tokens.'),
+    '#default_value' => $settings['public_name'],
+    '#autocomplete_path' => 'activity_log/autocomplete/public_name',
   );
 }
 

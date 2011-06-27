@@ -34,6 +34,13 @@ function activity_log_menu() {
     'access arguments' => array(1),
     'type' => MENU_CALLBACK,
   );
+  $items['activity_log/autocomplete/public_name'] = array(
+    'title' => 'Autocomplete Activity Log Public Name',
+    'page callback' => 'activity_log_autocomplete_public_name',
+    'access arguments' => array('view own activity messages'),
+    'type' => MENU_CALLBACK,
+    'file' => 'activity_log.rules.inc',
+  );
   return $items;
 }
 
@@ -42,9 +49,83 @@ function activity_log_menu() {
  */
 function activity_log_perm() {
   return array(
+    'disable viewing certain activity types in activity streams',
     'view all activity messages',
     'view own activity messages',
   );
+}
+
+/**
+ * Implementation of hook_user().
+ */
+function activity_log_user($op, &$edit, &$account, $category = NULL) {
+  if ($op == 'form') {
+    $form = array();
+    $form['activity_log'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Activity stream settings'),
+      '#description' => t('Enable or disable the types of activity you would like to see when you view your activity stream.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $result = db_query("SELECT DISTINCT(public_name) AS title FROM {activity_log_templates} WHERE public_name <> ''");
+    $types = array();
+    $default_values = array();
+    while ($row = db_fetch_object($result)) {
+      $types[$row->title] = t($row->title);
+      $default_values[$row->title] = $row->title;
+    }
+    $result = db_query("SELECT activity_type FROM {activity_log_disabled_types} WHERE uid = %d", $account->uid);
+    $disabled = array();
+    while ($row = db_fetch_object($result)) {
+      $default_values[$row->activity_type] = 0;
+      $disabled[] = $row->activity_type;
+    }
+    $form['activity_log']['activity_log_types'] = array(
+      '#type' => 'checkboxes',
+      '#options' => $types,
+      '#default_value' => $default_values,
+    );
+    $form['activity_log']['activity_log_types_all_values'] = array(
+      '#type' => 'value',
+      '#value' => array_keys($types),
+    );
+    $form['activity_log']['activity_log_types_disabled_values'] = array(
+      '#type' => 'value',
+      '#value' => $disabled,
+    );
+    return $form;
+  }
+  elseif ($op == 'update') {
+    $all = $edit['activity_log_types_all_values'];
+    $disabled = $edit['activity_log_types_disabled_values'];
+    $values = array_filter($edit['activity_log_types']);
+    $delete = array();
+    $add = array();
+    foreach ($all as $type) {
+      // Previously disabled, now enabled; delete record of it being disabled
+      if (in_array($type, $disabled) && in_array($type, $values)) {
+        $delete[] = $type;
+      }
+      // Previously enabled, now disabled; add record of it being disabled
+      elseif (!in_array($type, $disabled) && !in_array($type, $values)) {
+        $add[] = $type;
+      }
+    }
+    if (!empty($delete)) {
+      db_query("DELETE FROM {activity_log_disabled_types} WHERE activity_type IN (". db_placeholders($delete, 'text') .")", $delete);
+    }
+    if (!empty($add)) {
+      $subquery = array();
+      $args = array();
+      foreach ($add as $type) {
+        $subquery[] = "(%d, '%s')";
+        $args[] = $account->uid;
+        $args[] = $type;
+      }
+      db_query("INSERT INTO {activity_log_disabled_types} (uid, activity_type) VALUES". implode(',', $subquery), $args);
+    }
+  }
 }
 
 /**

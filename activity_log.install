@@ -38,6 +38,13 @@ function activity_log_schema() {
         'default' => '',
         'description' => 'Something which, when evaluated, returns the ID of the entity in whose stream messages using this template will appear.',
       ),
+      'public_name' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The title of the activity type that is shown to users who have the option to enable/disable activity types.',
+      ),
       'eval_input' => array(
         'type' => 'text',
         'not null' => TRUE,
@@ -93,6 +100,28 @@ function activity_log_schema() {
       'created' => array('created'),
     ),
     'primary key' => array('aid'),
+  );
+  $schema['activity_log_disabled_types'] = array(
+    'description' => 'Stores log templates.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the user who disabled this type.',
+      ),
+      'activity_type' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The activity type the user does not want included in their stream.',
+      ),
+    ),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
   );
   return $schema;
 }
