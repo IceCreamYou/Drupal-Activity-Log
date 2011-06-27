@@ -60,6 +60,16 @@ function activity_log_theme($existing, $type, $theme, $path) {
   );
 }
 
+/**
+ * Implementation of hook_cron().
+ */
+function activity_log_cron(){
+  // Delete event logs
+  db_query('DELETE from {activity_log_events} WHERE created <= %d', 86400 * variable_get('activity_log_maxage', 30));
+  // Delete any stray recipient mappings
+  db_query('DELETE from {activity_log_recipients} WHERE aid NOT IN (SELECT aid FROM activity_log_events)');
+}
+
 //==================
 // THEME FUNCTIONS.
 //==================
