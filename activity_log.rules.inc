@@ -36,6 +36,11 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
     // Remove the help for our input evaluator (because it's internal, not user-facing).
     unset($form['input_help']['activity_log_input_evaluator_process']);
   }
+  elseif ($form_id == 'rules_admin_form_delete') {
+    if (!empty($form['#parameters'][3]) && !empty($form['#parameters'][3]['#name']) && $form['#parameters'][3]['#name'] == 'activity_log_log_action') {
+      $form['#submit'][] = 'activity_log_rules_admin_form_delete';
+    }
+  }
 }
 
 /**
@@ -76,6 +81,20 @@ function activity_log_rules_admin_form_submit_after($form, &$form_state) {
   db_query("
     UPDATE {activity_log_templates} SET eval_input = '%s' WHERE tid = %d
   ", serialize($form_state['element']['#settings']['#eval input']), $form_state['values']['settings']['tid']);
+}
+
+/**
+ * Delete callback for the Rules action edit form.
+ *
+ * Clean up when our Activity Log action is deleted by deleting the associated
+ * template.
+ */
+function activity_log_rules_admin_form_delete($form, $form_state) {
+  if (!empty($form['#parameters'][3])) {
+    db_query("
+      DELETE FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner']);
+  }
 }
 
 //=============================
