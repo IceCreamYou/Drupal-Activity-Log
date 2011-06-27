@@ -16,7 +16,6 @@ define(ACTIVITY_LOG_DELIMITER, '#!ACTIVITY_LOG_DELIMITER:');
  */
 function activity_log_menu() {
   $items = array();
-  /*
   $items['admin/settings/activity_log'] = array(
     'title' => 'Activity Log',
     'page callback' => 'drupal_get_form',
@@ -25,7 +24,6 @@ function activity_log_menu() {
     'description' => 'Allows administrators to adjust settings for Activity Log.',
     'file' => 'activity_log.admin.inc',
   );
-   */
   $items['activity/%activity_log'] = array(
     'title callback' => 'activity_log_title_callback',
     'title arguments' => array(1),
@@ -141,6 +139,16 @@ function activity_log_theme($existing, $type, $theme, $path) {
       ),
     ),
   );
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function activity_log_cron(){
+  // Delete event logs
+  db_query('DELETE from {activity_log_events} WHERE created <= %d', time() - (86400 * variable_get('activity_log_maxage', 30)));
+  // Delete any stray recipient mappings
+  db_query('DELETE from {activity_log_recipients} WHERE aid NOT IN (SELECT aid FROM activity_log_events)');
 }
 
 //==================
@@ -374,6 +382,19 @@ function activity_log_token_list($type = 'all') {
     );
     return $tokens;
   }
+  
+  // Move into a patch for flage
+  $tokens = array();
+  foreach (flag_get_types() as $flag_type) {
+    if ($type == $flag_type || $type == 'all') {
+      $flags = flag_get_flags($flag_type);
+      foreach ($flags as $flag) {
+        $tokens[$flag_type]['flag-'. str_replace('_', '-', $flag->name) .'-link'] = t('Flag/unflag link for @flag', array('@flag' => $flag->get_title()));
+      }
+    }
+  }
+  return $tokens;
+
 }
 
 /**
@@ -398,4 +419,15 @@ function activity_log_token_values($type, $object = NULL, $options = array()){
     $tokens += token_get_date_token_values($object->created, 'created-');
     return $tokens;
   }
+  
+  // Move into a patch for the flags module
+  if (in_array($type, flag_get_types())) {
+    $values = array();
+    $flags = flag_get_flags($type);
+    foreach ($flags as $flag) {
+      $values['flag-'. str_replace('_', '-', $flag->name) .'-link'] = flag_create_link($flag->name, $flag->get_content_id($object));
+    }
+    return $values;
+  }
+
 }
