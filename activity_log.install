@@ -141,4 +141,5 @@ function activity_log_install() {
  */
 function activity_log_uninstall() {
   drupal_uninstall_schema('activity_log');
+  variable_del('activity_log_max_age');
 }
