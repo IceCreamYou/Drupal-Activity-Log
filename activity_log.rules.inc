@@ -24,7 +24,9 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
     if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
       // Run our custom submit hooks.
       array_unshift($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_before');
-      array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_after');
+      if ($form_id == 'rules_admin_form_add') {
+        array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_after');
+      }
       // Undo the prefix to the template value that we added so the input evaluator knows this is the template.
       if (isset($form['settings']['template']['#default_value'])) {
         $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
@@ -39,29 +41,18 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Submit callback for the Rules action edit form.
  *
- * Designate that the template should be processed later in
- * activity_log_input_evaluator_process_apply().
- */
-function activity_log_rules_admin_form_submit_before($form, &$form_state) {
-  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
-}
-
-/**
- * Submit callback for the Rules action edit form.
- *
  * Record all of the information we need about a template.
  */
-function activity_log_rules_admin_form_submit_after($form, &$form_state) {
+function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $rule = $form_state['proxy']->_rule_name;
-  $template = $form_state['values']['settings']['template'];
   $tid = db_result(db_query("
     SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
   ", $rule, $form['#old_stream_owner']));
   $record = (object) array(
     'rule' => $rule,
-    'template' => drupal_substr($template, drupal_strlen(ACTIVITY_LOG_DELIMITER)),
+    'template' => $form_state['values']['settings']['template'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
-    'eval_input' => serialize($form_state['element']['#settings']['#eval input']),
+    'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
   );
   if (!empty($tid)) {
     $record->tid = $tid;
@@ -71,6 +62,19 @@ function activity_log_rules_admin_form_submit_after($form, &$form_state) {
     drupal_write_record('activity_log_templates', $record);
   }
   $form_state['values']['settings']['tid'] = $record->tid;
+  // Designate that the template should be processed later in activity_log_input_evaluator_process_apply().
+  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
+}
+
+/**
+ * Submit callback for the Rules action edit form.
+ *
+ * Record all of the information we need about a template.
+ */
+function activity_log_rules_admin_form_submit_after($form, &$form_state) {
+  db_query("
+    UPDATE {activity_log_templates} SET eval_input = '%s' WHERE tid = %d
+  ", serialize($form_state['element']['#settings']['#eval input']), $form_state['values']['settings']['tid']);
 }
 
 //=============================
