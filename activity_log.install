@@ -26,6 +26,13 @@ function activity_log_schema() {
         'default' => '',
         'description' => 'The rule with which this template is associated.',
       ),
+      'action_label' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The label of the action with which this template is associated.',
+      ),
       'template' => array(
         'type' => 'text',
         'not null' => TRUE,

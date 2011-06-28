@@ -39,7 +39,6 @@ function activity_log_menu() {
     'page callback' => 'activity_log_autocomplete_public_name',
     'access arguments' => array('view own activity messages'),
     'type' => MENU_CALLBACK,
-    'file' => 'activity_log.rules.inc',
   );
   return $items;
 }
@@ -287,6 +286,20 @@ function activity_log_access_item($record, $account = NULL) {
     user_access('view all activity messages', $account);
 }
 
+/**
+ * Autocomplete callback for Rules action public name.
+ */
+function activity_log_autocomplete_public_name($string = '') {
+  $matches = array();
+  if ($string) {
+    $result = db_query_range("SELECT public_name FROM {activity_log_action_names} WHERE LOWER(public_name) LIKE LOWER('%s%%')", $string, 0, 10);
+    while ($row = db_fetch_object($result)) {
+      $matches[$row->public_name] = check_plain($row->public_name);
+    }
+  }
+  drupal_json($matches);
+}
+
 //=======================
 // PATHAUTO INTEGRATION.
 //=======================
@@ -428,4 +441,32 @@ function activity_log_token_values($type, $object = NULL, $options = array()){
     }
     return $values;
   }
+}
+
+//===========================
+// RADIOACTIVITY INTEGRATION
+//===========================
+
+/**
+ * Implementation of hook_radioactivity_info().
+ */
+function activity_log_radioactivity_info() {
+  $rules = rules_get_configured_items();
+  $info = array('sources' => array('activity_log' => array()), 'targets' => array('activity_log' => array()));
+  $result = db_query("SELECT tid, rule, action_label FROM {activity_log_templates}");
+  while ($template = db_fetch_object($result)) {
+    // The title_placeholder eventually gets run through check_plain().
+    $info['sources']['activity_log'][$template->tid] = array(
+      'title_placeholder' => $rules[$template->rule]['#label'] .' - '. $template->action_label,
+    );
+  }
+  return $info;
+}
+
+/**
+ * Implementation of hook_activity_log_event().
+ */
+function activity_log_activity_log_event($record, $settings) {
+  module_load_include('inc', 'radioactivity');
+  radioactivity_add_energy($record->aid, 'activity_log', $record->tid);
 }

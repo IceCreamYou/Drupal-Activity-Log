@@ -25,8 +25,9 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
       // Run our custom submit hooks.
       array_unshift($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_before');
       if ($form_id == 'rules_admin_form_add') {
-        array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_after');
+        array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_eval_after');
       }
+      array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_label_after');
       // Undo the prefix to the template value that we added so the input evaluator knows this is the template.
       if (isset($form['settings']['template']['#default_value'])) {
         $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
@@ -112,10 +113,24 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
  * We have to do this after the Rules submit callbacks run so that eval input
  * has already been computed.
  */
-function activity_log_rules_admin_form_submit_after($form, &$form_state) {
+function activity_log_rules_admin_form_submit_eval_after($form, &$form_state) {
   db_query("
     UPDATE {activity_log_templates} SET eval_input = '%s' WHERE tid = %d
   ", serialize($form_state['element']['#settings']['#eval input']), $form_state['values']['settings']['tid']);
+}
+
+/**
+ * Submit callback for the Rules action edit form.
+ *
+ * The label of the form may have changed between the first submit callback and
+ * now if the label wasn't customized and a label callback was used.
+ */
+function activity_log_rules_admin_form_submit_label_after($form, $form_state) {
+  if ($form_state['#action_label'] != $form_state['element']['#info']['label']) {
+    db_query("
+      UPDATE {activity_log_templates} SET action_label = '%s' WHERE tid = %d
+    ", $form_state['element']['#info']['label'], $form_state['values']['settings']['tid']);
+  }
 }
 
 /**
@@ -316,4 +331,5 @@ function activity_log_log_action($settings) {
     'id_map' => $map,
   );
   drupal_write_record('activity_log_events', $record);
+  module_invoke_all('activity_log_event', $record, $settings);
 }
