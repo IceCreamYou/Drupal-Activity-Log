@@ -38,12 +38,12 @@ function activity_log_schema() {
         'default' => '',
         'description' => 'Something which, when evaluated, returns the ID of the entity in whose stream messages using this template will appear.',
       ),
-      'public_name' => array(
-        'type' => 'varchar',
-        'length' => '255',
+      'pid' => array(
+        'type' => 'int',
         'not null' => TRUE,
-        'default' => '',
-        'description' => 'The title of the activity type that is shown to users who have the option to enable/disable activity types.',
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The public name ID.',
       ),
       'eval_input' => array(
         'type' => 'text',
@@ -111,17 +111,39 @@ function activity_log_schema() {
         'default' => 0,
         'description' => 'The ID of the user who disabled this type.',
       ),
-      'activity_type' => array(
-        'type' => 'varchar',
-        'length' => '255',
+      'pid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => '',
+        'default' => 0,
         'description' => 'The activity type the user does not want included in their stream.',
       ),
     ),
     'indexes' => array(
       'uid' => array('uid'),
     ),
+  );
+  $schema['activity_log_action_names'] = array(
+    'description' => 'Stores activity records.',
+    'fields' => array(
+      'pid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'The name ID.',
+      ),
+      'public_name' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The title of the activity type that is shown to users who have the option to enable/disable activity types.',
+      ),
+    ),
+    'unique keys' => array(
+      'public_name' => array('public_name'),
+    ),
+    'primary key' => array('pid'),
   );
   return $schema;
 }

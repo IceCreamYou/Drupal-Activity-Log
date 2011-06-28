@@ -68,18 +68,18 @@ function activity_log_user($op, &$edit, &$account, $category = NULL) {
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    $result = db_query("SELECT DISTINCT(public_name) AS title FROM {activity_log_templates} WHERE public_name <> ''");
+    $result = db_query("SELECT * FROM {activity_log_action_names}");
     $types = array();
     $default_values = array();
     while ($row = db_fetch_object($result)) {
-      $types[$row->title] = t($row->title);
-      $default_values[$row->title] = $row->title;
+      $types[$row->pid] = t($row->public_name);
+      $default_values[$row->pid] = $row->pid;
     }
-    $result = db_query("SELECT activity_type FROM {activity_log_disabled_types} WHERE uid = %d", $account->uid);
+    $result = db_query("SELECT pid FROM {activity_log_disabled_types} WHERE uid = %d", $account->uid);
     $disabled = array();
     while ($row = db_fetch_object($result)) {
-      $default_values[$row->activity_type] = 0;
-      $disabled[] = $row->activity_type;
+      $default_values[$row->pid] = 0;
+      $disabled[] = $row->pid;
     }
     $form['activity_log']['activity_log_types'] = array(
       '#type' => 'checkboxes',
@@ -113,17 +113,17 @@ function activity_log_user($op, &$edit, &$account, $category = NULL) {
       }
     }
     if (!empty($delete)) {
-      db_query("DELETE FROM {activity_log_disabled_types} WHERE activity_type IN (". db_placeholders($delete, 'text') .")", $delete);
+      db_query("DELETE FROM {activity_log_disabled_types} WHERE pid IN (". db_placeholders($delete) .")", $delete);
     }
     if (!empty($add)) {
       $subquery = array();
       $args = array();
       foreach ($add as $type) {
-        $subquery[] = "(%d, '%s')";
+        $subquery[] = "(%d, %d)";
         $args[] = $account->uid;
         $args[] = $type;
       }
-      db_query("INSERT INTO {activity_log_disabled_types} (uid, activity_type) VALUES". implode(',', $subquery), $args);
+      db_query("INSERT INTO {activity_log_disabled_types} (uid, pid) VALUES". implode(',', $subquery), $args);
     }
   }
 }
@@ -184,6 +184,8 @@ function activity_log_load($aid) {
     FROM {activity_log_events} e
     LEFT JOIN {activity_log_templates} t
       ON e.tid = t.tid
+    LEFT JOIN {activity_log_action_names} n
+      ON t.pid = n.pid
     WHERE e.aid = %d
   ", $aid));
   $record->eval_input = unserialize($record->eval_input);

@@ -47,17 +47,40 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
  * Submit callback for the Rules action edit form.
  *
  * Record all of the information we need about a template.
+ * This has to run before the Rules hooks so we can modify the settings values
+ * before they get saved.
  */
 function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $rule = $form_state['proxy']->_rule_name;
   $tid = db_result(db_query("
     SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
   ", $rule, $form['#old_stream_owner']));
+  $name = new stdClass();
+  $pid = 0;
+  if (!empty($tid)) {
+    $name = db_fetch_object(db_query("
+      SELECT n.*
+      FROM {activity_log_templates} t
+      LEFT JOIN {activity_log_action_names} n
+        ON t.pid = n.pid
+      WHERE tid = %d
+    ", $tid));
+    $pid = $name->pid;
+  }
+  // If this is a new action or we changed the public name, check if the new name exists. If it doesn't, save the new value.
+  if (empty($name) || $name->public_name != $form_state['values']['settings']['public_name']) {
+    $pid = db_result(db_query("SELECT pid FROM {activity_log_action_names} WHERE public_name = '%s'", $form_state['values']['settings']['public_name']));
+    if (empty($pid) && !empty($form_state['values']['settings']['public_name'])) {
+      $rec = (object) array('public_name' => $form_state['values']['settings']['public_name']);
+      drupal_write_record('activity_log_action_names', $rec);
+      $pid = $rec->pid;
+    }
+  }
   $record = (object) array(
     'rule' => $rule,
     'template' => $form_state['values']['settings']['template'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
-    'public_name' => $form_state['values']['settings']['public_name'],
+    'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
   );
   if (!empty($tid)) {
@@ -68,6 +91,16 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     drupal_write_record('activity_log_templates', $record);
   }
   $form_state['values']['settings']['tid'] = $record->tid;
+  // If switching values means that we've now abandoned an action name, remove it.
+  if (isset($name->pid) && $name->pid != $pid) {
+    db_query("
+      DELETE {activity_log_action_names}
+      FROM {activity_log_action_names}
+      LEFT JOIN {activity_log_templates}
+        ON {activity_log_action_names}.pid = {activity_log_templates}.pid
+      WHERE {activity_log_templates}.tid IS NULL
+    ");
+  }
   // Designate that the template should be processed later in activity_log_input_evaluator_process_apply().
   $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
 }
@@ -75,7 +108,9 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
 /**
  * Submit callback for the Rules action edit form.
  *
- * Record all of the information we need about a template.
+ * Set the eval input field when the action is first created.
+ * We have to do this after the Rules submit callbacks run so that eval input
+ * has already been computed.
  */
 function activity_log_rules_admin_form_submit_after($form, &$form_state) {
   db_query("
