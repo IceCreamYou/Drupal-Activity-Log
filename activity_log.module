@@ -12,29 +12,6 @@ define(ACTIVITY_LOG_DELIMITER, '#!ACTIVITY_LOG_DELIMITER:');
 //============================
 
 /**
- * Implementation of hook_menu().
- */
-function activity_log_menu() {
-  $items = array();
-  $items['admin/settings/activity_log'] = array(
-    'title' => 'Activity Log',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('activity_log_admin'),
-    'access arguments' => array('administer site configuration'),
-    'description' => 'Allows administrators to adjust settings for Activity Log.',
-    'file' => 'activity_log.admin.inc',
-  );
-  $items['activity_log/autocomplete/public_name'] = array(
-    'title' => 'Autocomplete Activity Log Public Name',
-    'page callback' => 'activity_log_autocomplete_public_name',
-    'access arguments' => array('view own activity messages'),
-    'file' => 'activity_log.rules.inc',
-    'type' => MENU_CALLBACK,
-  );
-  return $items;
-}
-
-/**
  * Implementation of hook_perm().
  */
 function activity_log_perm() {
