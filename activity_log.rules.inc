@@ -148,10 +148,10 @@ function activity_log_log_action_form($settings, &$form) {
 function activity_log_log_action_validate($form, $form_state) {
   $v = $form_state['values']['settings']['grouping'];
   if (!empty($v['group_template'])) {
-    if (!empty($v['group_interval']) && is_numeric($v['group_interval']) && $v['group_interval'] > 0) {
+    if (!empty($v['group_interval']) && (!is_numeric($v['group_interval']) || $v['group_interval'] <= 0)) {
       form_set_error('settings][grouping][group_interval', t('The maximum duration between activities to allow grouping must be a positive number.'));
     }
-    if (!empty($v['group_max']) && is_numeric($v['group_max']) && $v['group_max'] > 0) {
+    if (!empty($v['group_max']) && (!is_numeric($v['group_max']) && $v['group_max'] <= 0)) {
       form_set_error('settings][grouping][group_max', t('The maximum number of items allowed in a grouped message must be a positive number.'));
     }
     if ($v['group_method'] == 'action' || $v['group_method'] == 'user_action') {
