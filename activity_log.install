@@ -38,6 +38,16 @@ function activity_log_schema() {
         'not null' => TRUE,
         'description' => 'The template.',
       ),
+      'group_template' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'The grouped message template.',
+      ),
+      'group_summary' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'The short template summary for grouped messages.',
+      ),
       'stream_owner_id_template' => array(
         'type' => 'varchar',
         'length' => '255',
@@ -83,6 +93,13 @@ function activity_log_schema() {
         'default' => 0,
         'description' => 'The time the activity occurred.',
       ),
+      'acting_uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the user who took the action.',
+      ),
       'stream_owner_id' => array(
         'type' => 'int',
         'unsigned' => TRUE,
@@ -97,6 +114,27 @@ function activity_log_schema() {
         'default' => '',
         'description' => 'The entity type of the stream owner.',
       ),
+      'target_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the entity this action is about.',
+      ),
+      'target_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The type of the entity this action is about.',
+      ),
+      'target_class' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The Rules data type class of the entity this action is about.',
+      ),
       'id_map' => array(
         'type' => 'text',
         'not null' => TRUE,
@@ -104,9 +142,93 @@ function activity_log_schema() {
       ),
     ),
     'indexes' => array(
+      'tid' => array('tid'),
       'created' => array('created'),
+      'acting_uid' => array('acting_uid'),
+      'stream_owner_id' => array('stream_owner_id'),
+      'target_id' => array('target_id'),
     ),
     'primary key' => array('aid'),
+  );
+  $schema['activity_log_messages'] = array(
+    'description' => 'Stores the information used to build the actual streams, including grouped events.',
+    'fields' => array(
+      'mid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'The message ID.',
+      ),
+      'tid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The template ID.',
+      ),
+      'aids' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'A comma-separated list of activity record IDs (foreign keys to the events table).',
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The time the first event in the group occurred.',
+      ),
+      'last_updated' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The time the most recent event was added to this group.',
+      ),
+      'stream_owner_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the entity in whose stream this record should appear.',
+      ),
+      'stream_owner_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The entity type of the stream owner.',
+      ),
+      'target_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the entity this action is about.',
+      ),
+      'target_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The type of the entity this action is about.',
+      ),
+      'acting_uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => 'The ID of the user who took the action.',
+      ),
+    ),
+    'indexes' => array(
+      'tid' => array('tid'),
+      'last_updated' => array('last_updated'),
+      'stream_owner_id' => array('stream_owner_id'),
+      'target_id' => array('target_id'),
+      'acting_uid' => array('acting_uid'),
+    ),
+    'primary key' => array('mid'),
   );
   $schema['activity_log_disabled_types'] = array(
     'description' => 'Stores log templates.',
@@ -160,7 +282,7 @@ function activity_log_schema() {
  */
 function activity_log_install() {
   drupal_install_schema('activity_log');
-  drupal_set_message(st('The Rules Activity Log module was successfully installed.') .' '.
+  drupal_set_message(st('The Activity Log module was successfully installed.') .' '.
     st('To begin recording activity messages, <a href="@rules">create a Rule</a> that executes the "Log Activity" action.', array('@rules' => url('admin/rules/trigger')))
   );
 }

@@ -10,6 +10,161 @@
 //==================
 
 /**
+ * The form callback for the activity logging action.
+ */
+function activity_log_log_action_form($settings, &$form) {
+  drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
+  $settings += array(
+    'public_name' => '',
+    'group_method' => 'target_action',
+    'group_interval' => 86400,
+    'group_max' => 100,
+    'group_summary' => '',
+    'group_template' => '',
+    'template' => '',
+    'stream_owner' => '',
+    'type' => 'user',
+  );
+  $form['settings']['public_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Public name of this activity type'),
+    '#description' => t('The name of the activity as shown to users who have permission to disable certain activity types in their stream.') .' '.
+      t('Leave this field blank if you do not want to allow users to disable viewing messages about this activity type.') .' '.
+      t('This field does not accept tokens.'),
+    '#default_value' => $settings['public_name'],
+    '#autocomplete_path' => 'activity_log/autocomplete/public_name',
+  );
+  $form['settings']['grouping'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Group similar messages'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => '<p>'. t('Filling in these settings will allow grouping activity messages of this type in activity streams.') .' '.
+      t('That way, instead of saying e.g. "Jack likes this" and "Jill likes this" separately, only one message can appear saying "Jack and Jill like this."') .' '.
+      t('Messages will be grouped if there are at least two similar messages.') .' '.
+      t('<strong>Warning:</strong> displaying grouped messages is slower than displaying ungrouped messages.') .'</p>',
+  );
+  $form['settings']['grouping']['group_method'] = array(
+    '#type' => 'radios',
+    '#title' => t('Group by'),
+    '#description' =>
+      t('Grouping by the target entity shows multiple users who took the same action on an object, like "Jane and Joe commented on this node."') .' '.
+      t('You may want to group by action in cases where the result is trivial, such as changing profile pictures.') .' '.
+      t('Group by the acting user when the fact that the user took action is more important than the action taken.') .' '.
+      t('For example, you might group by the acting user on that user\'s profile for a "joined a group" action in order to get a message like "John joined the groups Drupal and Web Development."'),
+    '#required' => TRUE,
+    '#default_value' => $settings['group_method'],
+    '#options' => array(
+      'target_action' => t('Group by action and the entity on which the action was performed'),
+      'action' => t('Group by just the action'),
+      'user_action' => t('Group by the acting user and the action performed'),
+    ),
+  );
+  $form['settings']['grouping']['group_interval'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum duration between activities to allow grouping'),
+    '#description' => t('The oldest an activity record can be (in seconds) and still be grouped together with a new activity.'),
+    '#field_suffix' => t('seconds'),
+    '#default_value' => $settings['group_interval'],
+  );
+  $form['settings']['grouping']['group_max'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum number of items allowed in a grouped message'),
+    '#description' => t('Do not allow combining more than this many similar messages into the same message.'),
+    '#default_value' => $settings['group_max'],
+  );
+  $form['settings']['grouping']['group_summary'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Grouped item name'),
+    '#description' => t('A summary of one of the grouped items. For example, if you grouped by user on the "add node" action, you might enter "[node:title]" in this field.'),
+    '#default_value' => $settings['group_summary'],
+    '#rows' => 1,
+  );
+  $form['settings']['grouping']['group_template'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Grouped message template'),
+    '#description' => '<p>'. t('The format of the grouped message.') .' '.
+      t('The token <em>[names]</em> will be replaced with the names of the users who took this action.') .' '.
+      '<span id="activity-log-admin-description">'.
+        t('Additionally, the token <em>[collection]</em> will be replaced with summaries of the target objects formatted according to the "Grouped item name" setting above.')
+      .'</span> '.
+      t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .' '.
+      t('<strong>Leave this blank if you do not want this type of message to be grouped.</strong>') .'</p>',
+    '#default_value' => $settings['group_template'],
+    '#rows' => 3,
+  );
+  $form['settings']['template'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Activity message'),
+    '#default_value' => $settings['template'],
+    '#rows' => 3,
+    '#required' => TRUE,
+  );
+  $form['settings']['stream_owner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Stream owner'),
+    '#description' => t('Enter the ID of the entity in whose activity stream the activity records generated from this template should appear.'),
+    '#default_value' => $settings['stream_owner'],
+    '#required' => TRUE,
+  );
+  // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
+  $options = rules_extract_property(array_filter(rules_get_data_types(), 'rules_admin_element_filter'), 'label');
+  $options = array_map('drupal_ucfirst', $options);
+  // It only makes sense to offer options that have their own unique pages.
+  unset(
+    $options['comment'],
+    $options['date'],
+    $options['fbsmp'],
+    $options['fbss_comment'],
+    $options['flag'],
+    $options['number'],
+    $options['string'],
+    $options['taxonomy_vocab'],
+    $options['boolean'],
+    $options['global']
+  );
+  asort($options);
+  $form['settings']['type'] = array(
+    '#type' => 'select',
+    '#title' => t('Stream type'),
+    '#description' => t('The type of entity on whose stream the activity record will appear.'),
+    '#default_value' => $settings['type'],
+    '#options' => $options,
+    '#required' => TRUE,
+  );
+  $form['settings']['acting_user'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Acting user'),
+    '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user.'),
+    '#default_value' => $settings['acting_user'],
+    '#required' => TRUE,
+  );
+}
+
+/**
+ * The form validation callback for the activity logging action.
+ */
+function activity_log_log_action_validate($form, $form_state) {
+  $v = $form_state['values']['settings'];
+  if (!empty($v['group_template'])) {
+    if (!empty($v['group_interval']) && is_numeric($v['group_interval']) && $v['group_interval'] > 0) {
+      form_set_error('settings][grouping][group_interval', t('The maximum duration between activities to allow grouping must be a positive number.'));
+    }
+    if (!empty($v['group_max']) && is_numeric($v['group_max']) && $v['group_max'] > 0) {
+      form_set_error('settings][grouping][group_max', t('The maximum number of items allowed in a grouped message must be a positive number.'));
+    }
+    if ($v['group_method'] == 'action' || $v['group_method'] == 'user_action') {
+      if (empty($v['group_interval'])) {
+        form_set_error('settings][grouping][group_interval', t('You must enter a maximum duration between activities to allow grouping if you do not group by the target entity.'));
+      }
+      if (empty($v['group_max'])) {
+        form_set_error('settings][grouping][group_max', t('You must enter a maximum number of items allowed in a grouped message if you do not group by the target entity.'));
+      }
+    }
+  }
+}
+
+/**
  * Implementation of hook_form_alter().
  *
  * Do some magic to the Rules Activity Log action form so we can record all the
@@ -80,6 +235,8 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $record = (object) array(
     'rule' => $rule,
     'template' => $form_state['values']['settings']['template'],
+    'group_template' => $form_state['values']['settings']['group_template'],
+    'group_summary' => $form_state['values']['settings']['group_summary'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
@@ -147,6 +304,20 @@ function activity_log_rules_admin_form_delete($form, $form_state) {
   }
 }
 
+/**
+ * Autocomplete callback for the Rules action public name.
+ */
+function activity_log_autocomplete_public_name($string = '') {
+  $matches = array();
+  if ($string) {
+    $result = db_query_range("SELECT public_name FROM {activity_log_action_names} WHERE LOWER(public_name) LIKE LOWER('%s%%')", $string, 0, 10);
+    while ($row = db_fetch_object($result)) {
+      $matches[$row->public_name] = check_plain($row->public_name);
+    }
+  }
+  drupal_json($matches);
+}
+
 //=============================
 // RECORDING THE EVENT: STEP 2
 //=============================
@@ -202,6 +373,7 @@ function activity_log_input_evaluator_process_apply($string, $data = NULL, &$sta
       );
     }
   }
+  drupal_alter('activity_log_id_map', $map);
   $map['state'] = $state;
   $serialized = serialize($map);
   // Remove any instances of our delimiting string so we don't get anything mixed up.
@@ -253,63 +425,8 @@ function activity_log_rules_action_info() {
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Activity Log',
-      'eval input' => array('template', 'stream_owner'),
+      'eval input' => array('group_summary', 'group_template', 'template', 'stream_owner', 'acting_user'),
     ),
-  );
-}
-
-/**
- * The form callback for the activity logging action.
- */
-function activity_log_log_action_form($settings, &$form) {
-  $settings += array('template' => '', 'stream_owner' => '', 'type' => 'user', 'public_name' => '');
-  $form['settings']['template'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Activity message'),
-    '#default_value' => $settings['template'],
-    '#rows' => 3,
-    '#required' => TRUE,
-  );
-  $form['settings']['stream_owner'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Stream owner'),
-    '#description' => t('Enter the ID of the entity in whose activity stream the activity records generated from this template should appear.'),
-    '#default_value' => $settings['stream_owner'],
-    '#required' => TRUE,
-  );
-  // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
-  $options = rules_extract_property(array_filter(rules_get_data_types(), 'rules_admin_element_filter'), 'label');
-  $options = array_map('drupal_ucfirst', $options);
-  // It only makes sense to offer options that have their own unique pages.
-  unset(
-    $options['comment'],
-    $options['date'],
-    $options['fbsmp'],
-    $options['fbss_comment'],
-    $options['flag'],
-    $options['number'],
-    $options['string'],
-    $options['taxonomy_vocab'],
-    $options['boolean'],
-    $options['global']
-  );
-  asort($options);
-  $form['settings']['type'] = array(
-    '#type' => 'select',
-    '#title' => t('Stream type'),
-    '#description' => t('The type of entity on whose stream the activity record will appear.'),
-    '#default_value' => $settings['type'],
-    '#options' => $options,
-    '#required' => TRUE,
-  );
-  $form['settings']['public_name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Public name of this activity type'),
-    '#description' => t('The name of the activity as shown to users who have permission to disable certain activity types in their stream.') .' '.
-      t('Leave this field blank if you do not want to allow users to disable viewing messages about this activity type.') .' '.
-      t('This field does not accept tokens.'),
-    '#default_value' => $settings['public_name'],
-    '#autocomplete_path' => 'activity_log/autocomplete/public_name',
   );
 }
 
@@ -321,15 +438,81 @@ function activity_log_log_action($settings) {
   // Get the value of the settings set via the UI.
   $pos = strrpos($settings['template'], ACTIVITY_LOG_DELIMITER);
   $message = drupal_substr($settings['template'], 0, $pos);
-  $map = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER)); // serialized
+  $map_serialized = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER));
+  $map = unserialize($map_serialized);
+  $target = reset($map); // returns the first element
   // Store the event record.
   $record = (object) array(
     'tid' => $settings['tid'],
     'created' => $time,
+    'acting_uid' => $settings['acting_user'],
     'stream_owner_id' => $settings['stream_owner'],
     'stream_owner_type' => $settings['type'],
-    'id_map' => $map,
+    'target_id' => $target['id'],
+    'target_type' => $target['type'],
+    'target_class' => $target['class'],
+    'id_map' => $map_serialized,
   );
   drupal_write_record('activity_log_events', $record);
-  module_invoke_all('activity_log_event', $record, $settings);
+  if (!empty($settings['group_template'])) {
+    if ($settings['group_method'] == 'target_action') {
+      $gid = db_result(db_query_range("
+        SELECT gid
+        FROM {activity_log_messages}
+        WHERE
+          tid = %d AND                 /* group by activity type */
+          stream_owner_id = %d AND     /* group by stream the message appears in */
+          stream_owner_type = '%s' AND
+          target_id = %d AND           /* group by target entity */
+          target_type = '%s'
+        ORDER BY gid DESC
+      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->target_id, $record->target_type, 0, 1));
+    }
+    elseif ($settings['group_method'] == 'action') {
+      $gid = db_result(db_query_range("
+        SELECT gid
+        FROM {activity_log_messages}
+        WHERE
+          tid = %d AND                 /* group by activity type */
+          stream_owner_id = %d AND     /* group by stream the message appears in */
+          stream_owner_type = '%s' AND
+          created > %d AND             /* filter to groups that are new enough */
+          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
+        ORDER BY gid DESC
+      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['group_interval'], $settings['group_max'], 0, 1));
+    }
+    elseif ($settings['group_method'] == 'user_action') {
+      $gid = db_result(db_query_range("
+        SELECT gid
+        FROM {activity_log_messages}
+        WHERE
+          tid = %d AND                 /* group by activity type */
+          stream_owner_id = %d AND     /* group by stream the message appears in */
+          stream_owner_type = '%s' AND
+          acting_uid = %d AND          /* filter by action user */
+          created > %d AND             /* filter to groups that are new enough */
+          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
+        ORDER BY gid DESC
+      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['group_interval'], $settings['group_max'], 0, 1));
+    }
+  }
+  if (!empty($gid)) {
+    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, ',', %d), last_updated = %d WHERE gid = %d", $record->aid, $record->created, $gid);
+    $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE gid = %d", $gid));
+  }
+  else {
+    $group = (object) array(
+      'tid' => $record->tid,
+      'aids' => $record->aid,
+      'created' => $record->created,
+      'last_updated' => $record->created,
+      'stream_owner_id' => $record->stream_owner_id,
+      'stream_owner_type' => $record->stream_owner_type,
+      'target_id' => $record->target_id,
+      'target_type' => $record->target_type,
+      'acting_uid' => $record->acting_uid,
+    );
+    drupal_write_record('activity_log_messages', $group);
+  }
+  module_invoke_all('activity_log_event', $record, $group, $settings);
 }

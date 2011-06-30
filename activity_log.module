@@ -24,20 +24,11 @@ function activity_log_menu() {
     'description' => 'Allows administrators to adjust settings for Activity Log.',
     'file' => 'activity_log.admin.inc',
   );
-  $items['activity/%activity_log'] = array(
-    'title callback' => 'activity_log_title_callback',
-    'title arguments' => array(1),
-    'description' => 'Displays an activity message.',
-    'page callback' => 'theme',
-    'page arguments' => array('activity_log_item', 1),
-    'access callback' => 'activity_log_access_item',
-    'access arguments' => array(1),
-    'type' => MENU_CALLBACK,
-  );
   $items['activity_log/autocomplete/public_name'] = array(
     'title' => 'Autocomplete Activity Log Public Name',
     'page callback' => 'activity_log_autocomplete_public_name',
     'access arguments' => array('view own activity messages'),
+    'file' => 'activity_log.rules.inc',
     'type' => MENU_CALLBACK,
   );
   return $items;
@@ -48,7 +39,7 @@ function activity_log_menu() {
  */
 function activity_log_perm() {
   return array(
-    'disable viewing certain activity types in activity streams',
+    'configure preferences for which activity types appear in activity streams',
     'view all activity messages',
     'view own activity messages',
   );
@@ -58,7 +49,7 @@ function activity_log_perm() {
  * Implementation of hook_user().
  */
 function activity_log_user($op, &$edit, &$account, $category = NULL) {
-  if ($op == 'form') {
+  if ($op == 'form' && user_access('configure preferences for which activity types appear in activity streams', $account)) {
     $form = array();
     $form['activity_log'] = array(
       '#type' => 'fieldset',
@@ -95,7 +86,7 @@ function activity_log_user($op, &$edit, &$account, $category = NULL) {
     );
     return $form;
   }
-  elseif ($op == 'update') {
+  elseif ($op == 'update' && user_access('configure preferences for which activity types appear in activity streams', $account)) {
     $all = $edit['activity_log_types_all_values'];
     $disabled = $edit['activity_log_types_disabled_values'];
     $values = array_filter($edit['activity_log_types']);
@@ -125,6 +116,43 @@ function activity_log_user($op, &$edit, &$account, $category = NULL) {
       db_query("INSERT INTO {activity_log_disabled_types} (uid, pid) VALUES". implode(',', $subquery), $args);
     }
   }
+  elseif ($op == 'delete') {
+    db_query("
+      DELETE FROM {activity_log_events}
+      WHERE
+        acting_uid = %d OR
+        (stream_owner_id = %d AND stream_owner_type = 'user') OR
+        (target_id = %d AND target_type = 'user')
+    ", $account->uid, $account->uid, $account->uid);
+    db_query("
+      DELETE FROM {activity_log_messages}
+      WHERE
+        acting_uid = %d OR
+        (stream_owner_id = %d AND stream_owner_type = 'user') OR
+        (target_id = %d AND target_type = 'user')
+    ", $account->uid, $account->uid, $account->uid);
+    db_query("DELETE FROM {activity_log_disabled_types} WHERE uid = %d", $account->uid);
+  }
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function activity_log_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($op == 'delete') {
+    db_query("
+      DELETE FROM {activity_log_events}
+      WHERE
+        (stream_owner_id = %d AND stream_owner_type = 'node') OR
+        (target_id = %d AND target_type = 'node')
+    ", $node->nid, $node->nid);
+    db_query("
+      DELETE FROM {activity_log_messages}
+      WHERE
+        (stream_owner_id = %d AND stream_owner_type = 'node') OR
+        (target_id = %d AND target_type = 'node')
+    ", $node->nid, $node->nid);
+  }
 }
 
 /**
@@ -132,7 +160,9 @@ function activity_log_user($op, &$edit, &$account, $category = NULL) {
  */
 function activity_log_cron(){
   // Delete event logs.
-  db_query("DELETE FROM {activity_log_events} WHERE created < %d", time() - (86400 * variable_get('activity_log_maxage', 30)));
+  $time = time() - (86400 * variable_get('activity_log_maxage', 30));
+  db_query("DELETE FROM {activity_log_events} WHERE created < %d", $time);
+  db_query("DELETE FROM {activity_log_messages} WHERE last_updated < %d", $time);
 }
 
 /**
@@ -176,20 +206,24 @@ function theme_activity_log_item($record) {
  * @return
  *   A full Activity record.
  */
-function activity_log_load($aid) {
-  rules_include('rules');
+function activity_log_load($gid) {
   $record = db_fetch_object(db_query("
     SELECT *
-    FROM {activity_log_events} e
+    FROM {activity_log_messages} m
     LEFT JOIN {activity_log_templates} t
-      ON e.tid = t.tid
-    LEFT JOIN {activity_log_action_names} n
-      ON t.pid = n.pid
-    WHERE e.aid = %d
-  ", $aid));
+      ON m.tid = t.tid
+    WHERE gid = %d
+  ", $gid));
   $record->eval_input = unserialize($record->eval_input);
-  if (class_exists('rules_variable')) {
-    $record->id_map = unserialize($record->id_map);
+  rules_include('rules');
+  $aids = explode(',', $record->aids);
+  $record->events = array();
+  $result = db_query("
+    SELECT * FROM {activity_log_events} WHERE aid IN (". db_placeholders($aids) .")
+  ", $aids);
+  while ($event = db_fetch_object($result)) {
+    $event->id_map = unserialize($event->id_map);
+    $record->events[$aid] = $event;
   }
   return $record;
 }
@@ -240,138 +274,6 @@ function activity_log_get_variable($type, $id_map) {
   }
 }
 
-//=================
-// MENU CALLBACKS.
-//=================
-
-/**
- * Determines the title to display on an individual activity page.
- *
- * @param $record
- *   A fully qualified activity record.
- * @return
- *   A string for the title of an activity page.
- */
-function activity_log_title_callback($record) {
-  $message = t('Activity');
-  if ($record->stream_owner_type == 'user') {
-    $account = user_load($record->stream_owner_id);
-    $message = t("@name's activity", array('@name' => $account->name));
-  }
-  elseif ($record->stream_owner_type == 'node') {
-    $node = node_load($record->stream_owner_id);
-    $message = t("Activity on @title", array('@title' => $node->title));
-  }
-  return $message;
-}
-
-/**
- * Determines whether the current user has access to view this activity record.
- *
- * @param $record
- *   The activity record to which access is requested.
- * @param $account
- *   (Optional) The account of the user requesting access. Defaults to the
- *   current user.
- * @return
- *   TRUE if access is permitted; FALSE otherwise.
- */
-function activity_log_access_item($record, $account = NULL) {
-  // Default to the current user.
-  if (empty($account)) {
-    $account = $GLOBALS['user'];
-  }
-  // Grant access to the intended stream owner and administrators.
-  return ($record->stream_owner_type == 'user' && $record->stream_owner_id == $account->uid && user_access('view own activity messages', $account)) ||
-    user_access('view all activity messages', $account);
-}
-
-/**
- * Autocomplete callback for Rules action public name.
- */
-function activity_log_autocomplete_public_name($string = '') {
-  $matches = array();
-  if ($string) {
-    $result = db_query_range("SELECT public_name FROM {activity_log_action_names} WHERE LOWER(public_name) LIKE LOWER('%s%%')", $string, 0, 10);
-    while ($row = db_fetch_object($result)) {
-      $matches[$row->public_name] = check_plain($row->public_name);
-    }
-  }
-  drupal_json($matches);
-}
-
-//=======================
-// PATHAUTO INTEGRATION.
-//=======================
-
-/**
- * Implementation of hook_pathauto().
- */
-function activity_log_pathauto($op) {
-  if ($op != 'settings') {
-    return;
-  }
-  $tokens = token_get_list('activity_log');
-  $placeholders = array();
-  foreach ($tokens as $type => $set) {
-    if ($type != 'global') {
-       foreach ($set as $pattern => $description) {
-        $placeholders["[$pattern]"] = $description;
-      }
-    }
-  }
-  return (object) array(
-    'module' => 'activity_log',
-    'token_type' => 'activity_log',
-    'groupheader' => t('Activity Log settings'),
-    'patterndefault' => '', // No aliases should be generated by default.
-    'patterndescr' => t('Default path pattern'),
-    'placeholders' => $placeholders,
-    'bulkname' => t('Bulk update Activity Log paths'),
-    'bulkdescr' => t('Generate aliases for all existing activity records which do not already have aliases.'),
-  );
-}
-
-/**
- * Implementation of hook_pathauto_bulkupdate().
- * Inspired by the node implementation in pathauto_node.inc.
- */
-function activity_log_pathauto_bulkupdate() {
-  // Get all activity records that have no path alias.
-  $result = db_query_range("
-    SELECT al.*, alias.src, alias.dst
-    FROM {activity_log_events} al
-    LEFT JOIN {url_alias} alias
-      ON CONCAT('activity/', CAST(al.aid AS CHAR)) = alias.src
-    WHERE alias.src IS NULL
-  ", 0, variable_get('pathauto_max_bulk_update', 50));
-  // Set an alias for these records.
-  $count = 0;
-  $placeholders = array();
-  while ($activity_log = db_fetch_object($result)) {
-    // We can call this function because pathauto.inc should already be included.
-    $placeholders = pathauto_get_placeholders('activity_log', $activity_log);
-    $source = 'activity/'. $activity_log->aid;
-    if (pathauto_create_alias('activity_log', 'bulkupdate', $placeholders, $source, $type)) {
-      $count++;
-    }
-  }
-  // Report what we just did.
-  drupal_set_message(format_plural($count,
-    'Bulk generation of aliases for activity logs completed: one alias generated.',
-    'Bulk generation of aliases for activity logs completed: @count aliases generated.'
-  ));
-}
-
-/**
- * Implementation of hook_path_alias_types().
- */
-function facebook_status_path_alias_types() {
-  return array(
-    'activity/' => t('Activity message'),
-  );
-}
-
 //====================
 // TOKEN INTEGRATION.
 //====================
@@ -412,14 +314,15 @@ function activity_log_token_list($type = 'all') {
 /**
  * Implementation of hook_token_values().
  */
-function activity_log_token_values($type, $object = NULL, $options = array()){
+function activity_log_token_values($type, $object = NULL, $options = array()) {
   if ($type == 'activity_log') {
-    $keys = array_keys($object->id_map);
+    $event = array_shift($object->events);
+    $keys = array_keys($event->id_map);
     array_pop($keys); // Remove the "state" key
     $activity_objects = implode(',', $keys);
     $message = activity_log_evaluate_record($object);
     $tokens = array(
-      'activity-id' => $object->aid,
+      'activity-id' => $object->gid,
       'activity-objects' => $activity_objects,
       'activity-template-id' => $activity->tid,
       'activity-stream-id' => $object->stream_owner_id,
@@ -428,7 +331,7 @@ function activity_log_token_values($type, $object = NULL, $options = array()){
       'activity-message-clean' => strip_tags($message),
       'activity-message-clean-40' => drupal_substr(strip_tags($message), 0, 40),
     );
-    $tokens += token_get_date_token_values($object->created, 'created-');
+    $tokens += token_get_date_token_values($object->created, 'last_updated-');
     return $tokens;
   }
 
@@ -469,4 +372,26 @@ function activity_log_radioactivity_info() {
 function activity_log_activity_log_event($record, $settings) {
   module_load_include('inc', 'radioactivity');
   radioactivity_add_energy($record->aid, 'activity_log', $record->tid);
+}
+
+//=====================================
+// FACEBOOK-STYLE STATUSES INTEGRATION
+//=====================================
+
+/**
+ * Implementation of hook_facebook_status_delete().
+ */
+function activity_log_facebook_status_delete($status, $meta = array()) {
+  db_query("
+    DELETE FROM {activity_log_events}
+    WHERE
+      (stream_owner_id = %d AND stream_owner_type = 'facebook_status') OR
+      (target_id = %d AND target_type = 'facebook_status')
+  ", $status->sid, $status->sid);
+  db_query("
+    DELETE FROM {activity_log_messages}
+    WHERE
+      (stream_owner_id = %d AND stream_owner_type = 'facebook_status') OR
+      (target_id = %d AND target_type = 'facebook_status')
+  ", $status->sid, $status->sid);
 }

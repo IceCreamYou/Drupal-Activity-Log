@@ -3,4 +3,5 @@ description = "Logs activity using Rules."
 dependencies[] = rules
 dependencies[] = token
 dependencies[] = views
+package = Activity Log
 core = 6.x
