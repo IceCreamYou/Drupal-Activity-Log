@@ -468,3 +468,19 @@ function activity_log_facebook_status_delete($status, $meta = array()) {
       (target_id = %d AND target_type = 'facebook_status')
   ", $status->sid, $status->sid);
 }
+
+
+//===================
+// VIEWS INTEGRATION
+//===================
+
+/**
+ * Implementation of hook_views_api
+ */
+function activity_log_views_api(){
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'activity_log'),
+  );
+}
+
