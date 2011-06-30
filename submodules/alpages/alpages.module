@@ -112,20 +112,23 @@ function alpages_pathauto($op) {
 function alpages_pathauto_bulkupdate() {
   // Get all activity records that have no path alias.
   $result = db_query_range("
-    SELECT al.*, alias.src, alias.dst
-    FROM {activity_log_messages} al
+    SELECT alm.mid, alias.src, alias.dst
+    FROM {activity_log_messages} alm
     LEFT JOIN {url_alias} alias
-      ON CONCAT('activity/', CAST(al.mid AS CHAR)) = alias.src
+      ON CONCAT('activity/', CAST(alm.mid AS CHAR)) = alias.src
     WHERE alias.src IS NULL
   ", 0, variable_get('pathauto_max_bulk_update', 50));
   // Set an alias for these records.
   $count = 0;
   $placeholders = array();
   while ($activity_log = db_fetch_object($result)) {
+    $record = activity_log_load($activity_log->mid);
+    $record->src = $activity_log->src;
+    $record->dst = $activity_log->dst;
     // We can call this function because pathauto.inc should already be included.
-    $placeholders = pathauto_get_placeholders('activity_log', $activity_log);
-    $source = 'activity/'. $activity_log->mid;
-    if (pathauto_create_alias('activity_log', 'bulkupdate', $placeholders, $source, $type)) {
+    $placeholders = pathauto_get_placeholders('activity_log', $record);
+    $source = 'activity/'. $record->mid;
+    if (pathauto_create_alias('alpages', 'bulkupdate', $placeholders, $source, $record->mid)) {
       $count++;
     }
   }
