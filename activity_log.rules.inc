@@ -460,8 +460,8 @@ function activity_log_log_action($settings) {
   drupal_write_record('activity_log_events', $record);
   if (!empty($settings['grouping']['group_template'])) {
     if ($settings['grouping']['group_method'] == 'target_action') {
-      $gid = db_result(db_query_range("
-        SELECT gid
+      $mid = db_result(db_query_range("
+        SELECT mid
         FROM {activity_log_messages}
         WHERE
           tid = %d AND                 /* group by activity type */
@@ -469,12 +469,12 @@ function activity_log_log_action($settings) {
           stream_owner_type = '%s' AND
           target_id = %d AND           /* group by target entity */
           target_type = '%s'
-        ORDER BY gid DESC
+        ORDER BY mid DESC
       ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->target_id, $record->target_type, 0, 1));
     }
     elseif ($settings['grouping']['group_method'] == 'action') {
-      $gid = db_result(db_query_range("
-        SELECT gid
+      $mid = db_result(db_query_range("
+        SELECT mid
         FROM {activity_log_messages}
         WHERE
           tid = %d AND                 /* group by activity type */
@@ -482,12 +482,12 @@ function activity_log_log_action($settings) {
           stream_owner_type = '%s' AND
           created > %d AND             /* filter to groups that are new enough */
           LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
-        ORDER BY gid DESC
+        ORDER BY mid DESC
       ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
     }
     elseif ($settings['grouping']['group_method'] == 'user_action') {
-      $gid = db_result(db_query_range("
-        SELECT gid
+      $mid = db_result(db_query_range("
+        SELECT mid
         FROM {activity_log_messages}
         WHERE
           tid = %d AND                 /* group by activity type */
@@ -496,13 +496,13 @@ function activity_log_log_action($settings) {
           acting_uid = %d AND          /* filter by action user */
           created > %d AND             /* filter to groups that are new enough */
           LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
-        ORDER BY gid DESC
+        ORDER BY mid DESC
       ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
     }
   }
-  if (!empty($gid)) {
-    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, ',', %d), last_updated = %d WHERE gid = %d", $record->aid, $record->created, $gid);
-    $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE gid = %d", $gid));
+  if (!empty($mid)) {
+    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, ',', %d), last_updated = %d WHERE mid = %d", $record->aid, $record->created, $mid);
+    $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE mid = %d", $mid));
   }
   else {
     $group = (object) array(

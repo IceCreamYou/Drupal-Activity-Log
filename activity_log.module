@@ -248,19 +248,19 @@ function theme_activity_log_collapse($collection = array()) {
 /**
  * Loads an activity log record.
  *
- * @param $aid
- *   The ID of the activity record to load.
+ * @param $mid
+ *   The ID of the activity message to load.
  * @return
  *   A full Activity record.
  */
-function activity_log_load($gid) {
+function activity_log_load($mid) {
   $record = db_fetch_object(db_query("
     SELECT *
     FROM {activity_log_messages} m
     LEFT JOIN {activity_log_templates} t
       ON m.tid = t.tid
-    WHERE gid = %d
-  ", $gid));
+    WHERE mid = %d
+  ", $mid));
   $record->eval_input = unserialize($record->eval_input);
   rules_include('rules');
   $aids = explode(',', $record->aids);
@@ -418,7 +418,7 @@ function activity_log_token_values($type, $object = NULL, $options = array()) {
     $activity_objects = implode(',', $keys);
     $message = activity_log_evaluate_record($object);
     $tokens = array(
-      'activity-id' => $object->gid,
+      'activity-id' => $object->mid,
       'activity-objects' => $activity_objects,
       'activity-template-id' => $activity->tid,
       'activity-stream-id' => $object->stream_owner_id,
