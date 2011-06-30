@@ -115,7 +115,7 @@ function activity_log_pathauto_bulkupdate() {
     SELECT al.*, alias.src, alias.dst
     FROM {activity_log_messages} al
     LEFT JOIN {url_alias} alias
-      ON CONCAT('activity/', CAST(al.gid AS CHAR)) = alias.src
+      ON CONCAT('activity/', CAST(al.mid AS CHAR)) = alias.src
     WHERE alias.src IS NULL
   ", 0, variable_get('pathauto_max_bulk_update', 50));
   // Set an alias for these records.
@@ -124,7 +124,7 @@ function activity_log_pathauto_bulkupdate() {
   while ($activity_log = db_fetch_object($result)) {
     // We can call this function because pathauto.inc should already be included.
     $placeholders = pathauto_get_placeholders('activity_log', $activity_log);
-    $source = 'activity/'. $activity_log->gid;
+    $source = 'activity/'. $activity_log->mid;
     if (pathauto_create_alias('activity_log', 'bulkupdate', $placeholders, $source, $type)) {
       $count++;
     }
