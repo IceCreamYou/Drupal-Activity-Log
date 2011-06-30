@@ -225,19 +225,19 @@ function theme_activity_log_collapse($collection = array()) {
 /**
  * Loads an activity log record.
  *
- * @param $aid
- *   The ID of the activity record to load.
+ * @param $mid
+ *   The ID of the activity message to load.
  * @return
  *   A full Activity record.
  */
-function activity_log_load($gid) {
+function activity_log_load($mid) {
   $record = db_fetch_object(db_query("
     SELECT *
     FROM {activity_log_messages} m
     LEFT JOIN {activity_log_templates} t
       ON m.tid = t.tid
-    WHERE gid = %d
-  ", $gid));
+    WHERE mid = %d
+  ", $mid));
   $record->eval_input = unserialize($record->eval_input);
   rules_include('rules');
   $aids = explode(',', $record->aids);
@@ -265,8 +265,10 @@ function activity_log_evaluate_record($record) {
   rules_include('rules');
   // Get the stored data we need to apply the Rules input evaluators.
   $element = array('#settings' => array(
-    'group_summary' => $record->group_summary,
-    'group_template' => $record->group_template,
+    'grouping' => array(
+      'group_summary' => $record->group_summary,
+      'group_template' => $record->group_template,
+    ),
     'template' => $record->template,
     'stream_owner' => '',
     'acting_user' => '',
@@ -274,8 +276,8 @@ function activity_log_evaluate_record($record) {
     '#eval input' => $record->eval_input,
   ));
   // Evaluate all of our grouped events.
+  $template = '';
   $group_template = '';
-  $events = array();
   $names = array();
   $collection = array();
   foreach ($record->events as $event) {
@@ -287,22 +289,19 @@ function activity_log_evaluate_record($record) {
     // Apply the Rules input evaluators.
     rules_apply_input_evaluators($element, $state);
     // Keep track of the evaluated templates.
-    $events[] = array(
-      'group_summary' => $element['#settings']['group_summary'],
-      'template' => $element['#settings']['template'],
-    );
-    $group_template = $element['#settings']['group_template']; // same for every event
+    $template = $element['#settings']['template'];
+    $group_template = $element['#settings']['grouping']['group_template']; // same for every event
     // Compute the group template variables.
     if (strpos($group_template, '[names]') !== FALSE) {
       $acting_user = activity_log_user_load($event->acting_uid);
       $names[] = theme('username', $acting_user);
     }
     if (strpos($group_template, '[collection]') !== FALSE) {
-      $collection[] = $element['#settings']['group_summary'];
+      $collection[] = $element['#settings']['grouping']['group_summary'];
     }
   }
-  if (count($events) === 1) {
-    return $events[0]['template'];
+  if (count($record->events) === 1) {
+    return $template;
   }
   return str_replace(
     array('[names]', '[collection]'),
@@ -396,7 +395,7 @@ function activity_log_token_values($type, $object = NULL, $options = array()) {
     $activity_objects = implode(',', $keys);
     $message = activity_log_evaluate_record($object);
     $tokens = array(
-      'activity-id' => $object->gid,
+      'activity-id' => $object->mid,
       'activity-objects' => $activity_objects,
       'activity-template-id' => $activity->tid,
       'activity-stream-id' => $object->stream_owner_id,

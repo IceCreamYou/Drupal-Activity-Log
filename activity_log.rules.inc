@@ -16,11 +16,13 @@ function activity_log_log_action_form($settings, &$form) {
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
   $settings += array(
     'public_name' => '',
-    'group_method' => 'target_action',
-    'group_interval' => 86400,
-    'group_max' => 100,
-    'group_summary' => '',
-    'group_template' => '',
+    'grouping' => array(
+      'group_method' => 'target_action',
+      'group_interval' => 86400,
+      'group_max' => 100,
+      'group_summary' => '',
+      'group_template' => '',
+    ),
     'template' => '',
     'stream_owner' => '',
     'type' => 'user',
@@ -53,7 +55,7 @@ function activity_log_log_action_form($settings, &$form) {
       t('Group by the acting user when the fact that the user took action is more important than the action taken.') .' '.
       t('For example, you might group by the acting user on that user\'s profile for a "joined a group" action in order to get a message like "John joined the groups Drupal and Web Development."'),
     '#required' => TRUE,
-    '#default_value' => $settings['group_method'],
+    '#default_value' => $settings['grouping']['group_method'],
     '#options' => array(
       'target_action' => t('Group by action and the entity on which the action was performed'),
       'action' => t('Group by just the action'),
@@ -65,19 +67,19 @@ function activity_log_log_action_form($settings, &$form) {
     '#title' => t('Maximum duration between activities to allow grouping'),
     '#description' => t('The oldest an activity record can be (in seconds) and still be grouped together with a new activity.'),
     '#field_suffix' => t('seconds'),
-    '#default_value' => $settings['group_interval'],
+    '#default_value' => $settings['grouping']['group_interval'],
   );
   $form['settings']['grouping']['group_max'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum number of items allowed in a grouped message'),
     '#description' => t('Do not allow combining more than this many similar messages into the same message.'),
-    '#default_value' => $settings['group_max'],
+    '#default_value' => $settings['grouping']['group_max'],
   );
   $form['settings']['grouping']['group_summary'] = array(
     '#type' => 'textarea',
     '#title' => t('Grouped item name'),
     '#description' => t('A summary of one of the grouped items. For example, if you grouped by user on the "add node" action, you might enter "[node:title]" in this field.'),
-    '#default_value' => $settings['group_summary'],
+    '#default_value' => $settings['grouping']['group_summary'],
     '#rows' => 1,
   );
   $form['settings']['grouping']['group_template'] = array(
@@ -90,7 +92,7 @@ function activity_log_log_action_form($settings, &$form) {
       .'</span> '.
       t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .' '.
       t('<strong>Leave this blank if you do not want this type of message to be grouped.</strong>') .'</p>',
-    '#default_value' => $settings['group_template'],
+    '#default_value' => $settings['grouping']['group_template'],
     '#rows' => 3,
   );
   $form['settings']['template'] = array(
@@ -144,12 +146,12 @@ function activity_log_log_action_form($settings, &$form) {
  * The form validation callback for the activity logging action.
  */
 function activity_log_log_action_validate($form, $form_state) {
-  $v = $form_state['values']['settings'];
+  $v = $form_state['values']['settings']['grouping'];
   if (!empty($v['group_template'])) {
-    if (!empty($v['group_interval']) && is_numeric($v['group_interval']) && $v['group_interval'] > 0) {
+    if (!empty($v['group_interval']) && (!is_numeric($v['group_interval']) || $v['group_interval'] <= 0)) {
       form_set_error('settings][grouping][group_interval', t('The maximum duration between activities to allow grouping must be a positive number.'));
     }
-    if (!empty($v['group_max']) && is_numeric($v['group_max']) && $v['group_max'] > 0) {
+    if (!empty($v['group_max']) && (!is_numeric($v['group_max']) && $v['group_max'] <= 0)) {
       form_set_error('settings][grouping][group_max', t('The maximum number of items allowed in a grouped message must be a positive number.'));
     }
     if ($v['group_method'] == 'action' || $v['group_method'] == 'user_action') {
@@ -234,8 +236,8 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $record = (object) array(
     'rule' => $rule,
     'template' => $form_state['values']['settings']['template'],
-    'group_template' => $form_state['values']['settings']['group_template'],
-    'group_summary' => $form_state['values']['settings']['group_summary'],
+    'group_template' => $form_state['values']['settings']['grouping']['group_template'],
+    'group_summary' => $form_state['values']['settings']['grouping']['group_summary'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
@@ -456,10 +458,10 @@ function activity_log_log_action($settings) {
     'id_map' => $map_serialized,
   );
   drupal_write_record('activity_log_events', $record);
-  if (!empty($settings['group_template'])) {
-    if ($settings['group_method'] == 'target_action') {
-      $gid = db_result(db_query_range("
-        SELECT gid
+  if (!empty($settings['grouping']['group_template'])) {
+    if ($settings['grouping']['group_method'] == 'target_action') {
+      $mid = db_result(db_query_range("
+        SELECT mid
         FROM {activity_log_messages}
         WHERE
           tid = %d AND                 /* group by activity type */
@@ -467,12 +469,12 @@ function activity_log_log_action($settings) {
           stream_owner_type = '%s' AND
           target_id = %d AND           /* group by target entity */
           target_type = '%s'
-        ORDER BY gid DESC
+        ORDER BY mid DESC
       ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->target_id, $record->target_type, 0, 1));
     }
-    elseif ($settings['group_method'] == 'action') {
-      $gid = db_result(db_query_range("
-        SELECT gid
+    elseif ($settings['grouping']['group_method'] == 'action') {
+      $mid = db_result(db_query_range("
+        SELECT mid
         FROM {activity_log_messages}
         WHERE
           tid = %d AND                 /* group by activity type */
@@ -480,12 +482,12 @@ function activity_log_log_action($settings) {
           stream_owner_type = '%s' AND
           created > %d AND             /* filter to groups that are new enough */
           LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
-        ORDER BY gid DESC
-      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['group_interval'], $settings['group_max'], 0, 1));
+        ORDER BY mid DESC
+      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
     }
-    elseif ($settings['group_method'] == 'user_action') {
-      $gid = db_result(db_query_range("
-        SELECT gid
+    elseif ($settings['grouping']['group_method'] == 'user_action') {
+      $mid = db_result(db_query_range("
+        SELECT mid
         FROM {activity_log_messages}
         WHERE
           tid = %d AND                 /* group by activity type */
@@ -494,13 +496,13 @@ function activity_log_log_action($settings) {
           acting_uid = %d AND          /* filter by action user */
           created > %d AND             /* filter to groups that are new enough */
           LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
-        ORDER BY gid DESC
-      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['group_interval'], $settings['group_max'], 0, 1));
+        ORDER BY mid DESC
+      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
     }
   }
-  if (!empty($gid)) {
-    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, ',', %d), last_updated = %d WHERE gid = %d", $record->aid, $record->created, $gid);
-    $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE gid = %d", $gid));
+  if (!empty($mid)) {
+    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, ',', %d), last_updated = %d WHERE mid = %d", $record->aid, $record->created, $mid);
+    $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE mid = %d", $mid));
   }
   else {
     $group = (object) array(
