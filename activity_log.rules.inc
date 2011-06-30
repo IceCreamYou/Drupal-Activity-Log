@@ -137,7 +137,6 @@ function activity_log_log_action_form($settings, &$form) {
     '#title' => t('Acting user'),
     '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user.'),
     '#default_value' => $settings['acting_user'],
-    '#required' => TRUE,
   );
 }
 
@@ -441,6 +440,9 @@ function activity_log_log_action($settings) {
   $map_serialized = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER));
   $map = unserialize($map_serialized);
   $target = reset($map); // returns the first element
+  if (empty($settings['acting_user'])) {
+    $settings['acting_user'] = $GLOBALS['user']->uid;
+  }
   // Store the event record.
   $record = (object) array(
     'tid' => $settings['tid'],
