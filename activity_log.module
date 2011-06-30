@@ -175,6 +175,11 @@ function activity_log_theme($existing, $type, $theme, $path) {
         'aid' => NULL,
       ),
     ),
+    'activity_log_collapse' => array(
+      'arguments' => array(
+        'collection' => array(),
+      ),
+    ),
   );
 }
 
@@ -192,6 +197,48 @@ function activity_log_theme($existing, $type, $theme, $path) {
  */
 function theme_activity_log_item($record) {
   return '<div class="activity-message">'. activity_log_evaluate_record($record) .'</div>';
+}
+
+/**
+ * Collapses an array to a string summarizing its elements.
+ *
+ * Depending on the number of elements in the collection, the result could be
+ * in one of the following formats:
+ * - [nothing]
+ * - Joe
+ * - Jack and Jill
+ * - Jack, Jill, and Joe
+ * - Jane, Jim, and N other people
+ */
+function theme_activity_log_collapse($collection = array()) {
+  $count = count($collection);
+  if ($count == 0) {
+    return;
+  }
+  elseif ($count === 1) {
+    $output = $collection[0];
+  }
+  elseif ($count == 2) {
+    $output = t('@first and @second', array('@first' => $collection[0], '@second' => $collection[1]));
+  }
+  elseif ($count == 3) {
+    $output = t('@first, @second, and @third', array(
+      '@first' => $collection[0],
+      '@second' => $collection[1],
+      '@third' => $collection[2],
+    ));
+  }
+  else {
+    $first = array_pop($collection);
+    $second = array_pop($collection);
+    $output = t('@first, @second, and <a class="activity-log-collection-more" href="!here">@count other people</a>', array(
+      '@first' => $first,
+      '@second' => $second,
+      '!here' => url($_GET['q'], array('absolute' => TRUE)),
+      '@count' => $count - 2,
+    ));
+  }
+  return '<span class="activity-log-collection">'. $output .'</span>';
 }
 
 //====================================
@@ -241,19 +288,53 @@ function activity_log_evaluate_record($record) {
   rules_include('rules');
   // Get the stored data we need to apply the Rules input evaluators.
   $element = array('#settings' => array(
+    'group_summary' => $record->group_summary,
+    'group_template' => $record->group_template,
     'template' => $record->template,
+    'stream_owner' => '',
+    'acting_user' => '',
     'tid' => $record->tid,
     '#eval input' => $record->eval_input,
   ));
-  // Reconstruct the Rules State as if the event was triggered just now.
-  $state = $record->id_map['state'];
-  foreach ($state['variables'] as $type => $info) {
-    $info->data->_data = activity_log_get_variable($type, $record->id_map);
+  // Evaluate all of our grouped events.
+  $group_template = '';
+  $events = array();
+  $names = array();
+  $collection = array();
+  foreach ($record->events as $event) {
+    // Reconstruct the Rules State as if the event was triggered just now.
+    $state = $event->id_map['state'];
+    foreach ($state['variables'] as $type => $info) {
+      $info->data->_data = activity_log_get_variable($type, $event->id_map);
+    }
+    // Apply the Rules input evaluators.
+    rules_apply_input_evaluators($element, $state);
+    // Keep track of the evaluated templates.
+    $events[] = array(
+      'group_summary' => $element['#settings']['group_summary'],
+      'template' => $element['#settings']['template'],
+    );
+    $group_template = $element['#settings']['group_template']; // same for every event
+    // Compute the group template variables.
+    if (strpos($group_template, '[names]') !== FALSE) {
+      $acting_user = activity_log_user_load($event->acting_uid);
+      $names[] = theme('username', $acting_user);
+    }
+    if (strpos($group_template, '[collection]') !== FALSE) {
+      $collection[] = $element['#settings']['group_summary'];
+    }
   }
-  // Apply the Rules input evaluators.
-  rules_apply_input_evaluators($element, $state);
-  // Return the evaluated template.
-  return $element['#settings']['template'];
+  if (count($events) === 1) {
+    return $events[0]['template'];
+  }
+  return str_replace(
+    array('[names]', '[collection]'),
+    array(
+      theme('activity_log_collapse', $names),
+      theme('activity_log_collapse', $collection)
+    ),
+    $group_template
+  );
 }
 
 //===================
@@ -272,6 +353,22 @@ function activity_log_get_variable($type, $id_map) {
     $object = new $id_map[$type]['class'];
     return $object->load($id_map[$type]['id']);
   }
+}
+
+/**
+ * Wraps user_load() so it can be statically cached.
+ *
+ * @param $uid
+ *   A User ID.
+ * @return
+ *   A $user object.
+ */
+function activity_log_user_load($uid) {
+  static $accounts = array();
+  if (!isset($accounts[$uid])) {
+    $accounts[$uid] = user_load(array('uid' => $uid));
+  }
+  return $accounts[$uid];
 }
 
 //====================

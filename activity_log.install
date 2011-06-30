@@ -48,13 +48,6 @@ function activity_log_schema() {
         'not null' => TRUE,
         'description' => 'The short template summary for grouped messages.',
       ),
-      'stream_owner_id_template' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'Something which, when evaluated, returns the ID of the entity in whose stream messages using this template will appear.',
-      ),
       'pid' => array(
         'type' => 'int',
         'not null' => TRUE,
