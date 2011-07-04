@@ -135,7 +135,7 @@ function activity_log_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 /**
  * Implementation of hook_cron().
  */
-function activity_log_cron(){
+function activity_log_cron() {
   // Delete event logs.
   $time = time() - (86400 * variable_get('activity_log_maxage', 30));
   db_query("DELETE FROM {activity_log_events} WHERE created < %d", $time);
@@ -196,21 +196,21 @@ function theme_activity_log_collapse($collection = array()) {
     $output = $collection[0];
   }
   elseif ($count == 2) {
-    $output = t('@first and @second', array('@first' => $collection[0], '@second' => $collection[1]));
+    $output = t('!first and !second', array('!first' => $collection[0], '!second' => $collection[1]));
   }
   elseif ($count == 3) {
-    $output = t('@first, @second, and @third', array(
-      '@first' => $collection[0],
-      '@second' => $collection[1],
-      '@third' => $collection[2],
+    $output = t('!first, !second, and !third', array(
+      '!first' => $collection[0],
+      '!second' => $collection[1],
+      '!third' => $collection[2],
     ));
   }
   else {
     $first = array_pop($collection);
     $second = array_pop($collection);
-    $output = t('@first, @second, and <a class="activity-log-collection-more" href="!here">@count other people</a>', array(
-      '@first' => $first,
-      '@second' => $second,
+    $output = t('!first, !second, and <a class="activity-log-collection-more" href="!here">@count others</a>', array(
+      '!first' => $first,
+      '!second' => $second,
       '!here' => url($_GET['q'], array('absolute' => TRUE)),
       '@count' => $count - 2,
     ));
@@ -247,7 +247,7 @@ function activity_log_load($mid) {
   ", $aids);
   while ($event = db_fetch_object($result)) {
     $event->id_map = unserialize($event->id_map);
-    $record->events[$aid] = $event;
+    $record->events[$event->aid] = $event;
   }
   return $record;
 }
@@ -264,7 +264,7 @@ function activity_log_evaluate_record($record) {
   $time = time();
   rules_include('rules');
   // Get the stored data we need to apply the Rules input evaluators.
-  $element = array('#settings' => array(
+  $master_element = array('#settings' => array(
     'grouping' => array(
       'group_summary' => $record->group_summary,
       'group_template' => $record->group_template,
@@ -281,6 +281,7 @@ function activity_log_evaluate_record($record) {
   $names = array();
   $collection = array();
   foreach ($record->events as $event) {
+    $element = $master_element;
     // Reconstruct the Rules State as if the event was triggered just now.
     $state = $event->id_map['state'];
     foreach ($state['variables'] as $type => $info) {
