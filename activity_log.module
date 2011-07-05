@@ -538,13 +538,15 @@ function activity_log_radioactivity_info() {
  * Implementation of hook_activity_log_event().
  */
 function activity_log_activity_log_event($record, $group, $settings) {
-  module_load_include('inc', 'radioactivity');
-  $aids = explode(',', $group->aids);
-  if (count($aids) > 1) {
-    radioactivity_add_energy($group->mid, 'act_log', 'group:'. $record->tid);
-  }
-  else {
-    radioactivity_add_energy($group->mid, 'act_log', 'event:'. $record->tid);
+  if (module_exists('radioactivity')) {
+    module_load_include('inc', 'radioactivity');
+    $aids = explode(',', $group->aids);
+    if (count($aids) > 1) {
+      radioactivity_add_energy($group->mid, 'act_log', 'group:'. $record->tid);
+    }
+    else {
+      radioactivity_add_energy($group->mid, 'act_log', 'event:'. $record->tid);
+    }
   }
 }
 
