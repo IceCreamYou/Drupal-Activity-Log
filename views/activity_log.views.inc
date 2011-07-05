@@ -6,11 +6,14 @@
 function activity_log_views_handlers() {
   return array(
     'info' => array(
-      'path' => drupal_get_path('module', 'activity_log') . '/views',
+      'path' => drupal_get_path('module', 'activity_log') .'/views',
     ),
     'handlers' => array(
       'activity_log_views_handler_field_mid' => array(
         'parent' => 'views_handler_field',
+      ),
+      'activity_log_views_handler_filter_owner_type' => array(
+        'parent' => 'views_handler_filter',
       ),
     ),
   );
@@ -25,13 +28,13 @@ function activity_log_views_data() {
   
   $data['activity_log_messages']['table']['base'] = array(
     'field' => 'mid',
-    'title' => t('Activity Log'),
-    'help' => t('Activities Logged by the Activity Log module'),
+    'title' => t('Activity log'),
+    'help' => t('Activities logged by the Activity log module'),
     'weight' => -10,
   );
   
   $data['activity_log_messages']['mid'] = array(
-    'title' => t('Activity Log Message'),
+    'title' => t('Activity log message'),
     'help' => t('The evaluated template from the event'),
     'field' => array(
       'handler' => 'activity_log_views_handler_field_mid',
@@ -48,7 +51,7 @@ function activity_log_views_data() {
   );
   
   $data['activity_log_messages']['stream_owner_id'] = array(
-    'title' => t('Stream Owner'),
+    'title' => t('Stream owner'),
     'help' => t('The entity in whose activity stream the messages are intended to appear'),
     'filter' => array(
       'handler' => 'views_handler_filter_numeric',
@@ -59,10 +62,10 @@ function activity_log_views_data() {
   );
   
   $data['activity_log_messages']['stream_owner_type'] = array(
-    'title' => t('Stream Owner Type'),
+    'title' => t('Stream owner type'),
     'help' => t('The type of entity in whose activity stream the messages are intended to appear'),
     'filter' => array(
-      'handler' => 'views_handler_filter_string',
+      'handler' => 'activity_log_views_handler_filter_owner_type',
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_string',
