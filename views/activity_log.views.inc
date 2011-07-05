@@ -59,13 +59,13 @@ function activity_log_views_data() {
   );
   
   $data['activity_log_messages']['stream_owner_type'] = array(
-    'title' => t('Stream Owner'),
+    'title' => t('Stream Owner Type'),
     'help' => t('The type of entity in whose activity stream the messages are intended to appear'),
     'filter' => array(
-      'handler' => 'views_handler_filter',
+      'handler' => 'views_handler_filter_string',
     ),
     'argument' => array(
-      'handler' => 'views_handler_argument',
+      'handler' => 'views_handler_argument_string',
     ),
   );
   
