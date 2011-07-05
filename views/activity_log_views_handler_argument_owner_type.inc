@@ -2,10 +2,10 @@
 
 /**
  * @file
- *   Extends views_handler_field with the ability to theme activity log messages
+ *   Extends views_handler_filter_numeric to allow selection of stream type
  */
 
-class activity_log_views_handler_filter_owner extends views_handler_filter_numeric {
+class activity_log_views_handler_argument_owner_type extends views_handler_argument {
   
   /*
    * Modified options form to include the option to select stream type
@@ -39,10 +39,11 @@ class activity_log_views_handler_filter_owner extends views_handler_filter_numer
       '#type' => 'textfield',
       '#title' => t('Stream type'),
       '#description' => t('The type of entity on whose stream the activity is intended to appear.'),
-      '#default_value' => (empty($this->options['type']) ? 'user' : $this->options['type']),
+      '#default_value' => (empty($this->options['stream_type']) ? 'user' : $this->options['stream_type']),
       //'#default_value' => $this->options['type'],
       //'#options' => $options,
       '#required' => TRUE,
     );
   }
+
 }
