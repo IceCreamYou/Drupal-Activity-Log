@@ -21,6 +21,7 @@ function activity_log_log_action_form($settings, &$form) {
       'group_interval' => 86400,
       'group_max' => 100,
       'group_summary' => '',
+      'collapse_method' => 'activity_log_collection_inline',
       'group_template' => '',
     ),
     'template' => '',
@@ -82,6 +83,15 @@ function activity_log_log_action_form($settings, &$form) {
     '#description' => t('A summary of one of the grouped items. For example, if you grouped by user on the "add node" action, you might enter "[node:title]" in this field.'),
     '#default_value' => $settings['grouping']['group_summary'],
     '#rows' => 1,
+  );
+  $options = module_invoke_all('activity_log_collapse_methods');
+  $form['settings']['grouping']['collapse_method'] = array(
+    '#type' => 'select',
+    '#title' => t('Collection format'),
+    '#description' => t('The format used to evaluate the [collection] token in the grouped message template below.'),
+    '#required' => TRUE,
+    '#default_value' => $settings['grouping']['collapse_method'],
+    '#options' => $options,
   );
   $form['settings']['grouping']['group_template'] = array(
     '#type' => 'textarea',
@@ -239,6 +249,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'template' => $form_state['values']['settings']['template'],
     'group_template' => $form_state['values']['settings']['grouping']['group_template'],
     'group_summary' => $form_state['values']['settings']['grouping']['group_summary'],
+    'collapse_method' => $form_state['values']['settings']['grouping']['collapse_method'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
@@ -440,7 +451,7 @@ function activity_log_rules_action_info() {
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Activity Log',
-      'eval input' => array('group_summary', 'group_template', 'template', 'stream_owner', 'acting_user'),
+      'eval input' => array('grouping|group_summary', 'grouping|group_template', 'template', 'stream_owner', 'acting_user'),
     ),
   );
 }

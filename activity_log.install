@@ -48,6 +48,13 @@ function activity_log_schema() {
         'not null' => TRUE,
         'description' => 'The short template summary for grouped messages.',
       ),
+      'collapse_method' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The method used to combine action summaries if applicable.',
+      ),
       'stream_owner_id_template' => array(
         'type' => 'varchar',
         'length' => '255',

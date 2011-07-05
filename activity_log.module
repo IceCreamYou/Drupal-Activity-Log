@@ -209,8 +209,17 @@ function theme_activity_log_item($record) {
  * - Jack and Jill
  * - Jack, Jill, and Joe
  * - Jane, Jim, and N other people
+ *
+ * @param $collection
+ *   An array of strings to collapse into a single string.
+ * @param $method
+ *   The method to use to collapse the collection. Should be the name of a
+ *   function that takes the collection array and the number of items in that
+ *   array as arguments.
+ * @return
+ *   A string representing the collapsed collection array.
  */
-function theme_activity_log_collapse($collection = array()) {
+function theme_activity_log_collapse($collection = array(), $method = 'activity_log_collapse_inline') {
   $count = count($collection);
   if ($count == 0) {
     return;
@@ -218,25 +227,8 @@ function theme_activity_log_collapse($collection = array()) {
   elseif ($count === 1) {
     $output = $collection[0];
   }
-  elseif ($count == 2) {
-    $output = t('!first and !second', array('!first' => $collection[0], '!second' => $collection[1]));
-  }
-  elseif ($count == 3) {
-    $output = t('!first, !second, and !third', array(
-      '!first' => $collection[0],
-      '!second' => $collection[1],
-      '!third' => $collection[2],
-    ));
-  }
   else {
-    $first = array_pop($collection);
-    $second = array_pop($collection);
-    $output = t('!first, !second, and <a class="activity-log-collection-more" href="!here">@count others</a>', array(
-      '!first' => $first,
-      '!second' => $second,
-      '!here' => url($_GET['q'], array('absolute' => TRUE)),
-      '@count' => $count - 2,
-    ));
+    $output = $method($collection, $count);
   }
   return '<span class="activity-log-collection">'. $output .'</span>';
 }
@@ -331,7 +323,7 @@ function activity_log_evaluate_record($record) {
     array('[names]', '[collection]'),
     array(
       theme('activity_log_collapse', $names),
-      theme('activity_log_collapse', $collection)
+      theme('activity_log_collapse', $collection, $record->collapse_method)
     ),
     $group_template
   );
@@ -369,6 +361,75 @@ function activity_log_user_load($uid) {
     $accounts[$uid] = user_load(array('uid' => $uid));
   }
   return $accounts[$uid];
+}
+
+//================================
+// COLLECTION COLLAPSING METHODS.
+//================================
+
+/**
+ * Implementation of hook_activity_log_collapse_methods().
+ */
+function activity_log_activity_log_collapse_methods() {
+  return array(
+    'activity_log_collapse_inline' => t('Inline (A, B, and 3 others)'),
+    'activity_log_collapse_list_horizontal' => t('Horizontal list (A B C D)'),
+    'activity_log_collapse_list_vertical' => t('Vertical list (each item on its own line)'),
+  );
+}
+
+/**
+ * Collapses an array of strings into the format "A, B, and 3 others."
+ */
+function activity_log_collapse_inline($collection, $count) {
+  if ($count == 2) {
+    $output = t('!first and !second', array('!first' => $collection[0], '!second' => $collection[1]));
+  }
+  elseif ($count == 3) {
+    $output = t('!first, !second, and !third', array(
+      '!first' => $collection[0],
+      '!second' => $collection[1],
+      '!third' => $collection[2],
+    ));
+  }
+  else {
+    $path = drupal_get_path('module', 'activity_log');
+    drupal_add_css($path .'/activity_log.css');
+    drupal_add_js($path .'/activity_log.js');
+    $first = array_pop($collection);
+    $second = array_pop($collection);
+    $output = t('!first, !second, and <a class="activity-log-collection-more" href="!here">@count others</a>', array(
+      '!first' => $first,
+      '!second' => $second,
+      '!here' => url($_GET['q'], array('absolute' => TRUE)),
+      '@count' => $count - 2,
+    ));
+    $collection[] = $second;
+    $output .= '<div class="activity-log-collection-more-expand">'.
+      t('!collection, and !last', array('!collection' => implode(', ', $collection), '!last' => $first))
+    .'</div>';
+  }
+  return $output;
+}
+
+/**
+ * Collapses an array of strings into a horizontal list, e.g. "A B C D".
+ */
+function activity_log_collapse_list_horizontal($collection, $count) {
+  drupal_add_css(drupal_get_path('module', 'activity_log') .'/activity_log.css');
+  return theme('item_list', $collection, NULL, 'ul', array('class' => 'activity-log-collection-list-horizontal'));
+}
+
+/**
+ * Collapses an array of strings into a vertical list, e.g.:
+ * - A
+ * - B
+ * - C
+ * - D
+ */
+function activity_log_collapse_list_vertical($collection, $count) {
+  drupal_add_css(drupal_get_path('module', 'activity_log') .'/activity_log.css');
+  return theme('item_list', $collection, NULL, 'ul', array('class' => 'activity-log-collection-list-vertical'));
 }
 
 //====================
