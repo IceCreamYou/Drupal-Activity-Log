@@ -449,15 +449,25 @@ function activity_log_token_values($type, $object = NULL, $options = array()) {
 
 /**
  * Implementation of hook_radioactivity_info().
+ *
+ * We have to use "act_log" instead of "activity_log" because the Radioactivity
+ * module restricts the "class" column of the {radioactivity} table to 7
+ * characters. Issue http://drupal.org/node/1209648
  */
 function activity_log_radioactivity_info() {
   $rules = rules_get_configured_items();
-  $info = array('sources' => array('activity_log' => array()), 'targets' => array('activity_log' => array()));
+  $info = array('sources' => array('act_log' => array()), 'targets' => array('act_log' => array()));
   $result = db_query("SELECT tid, rule, action_label FROM {activity_log_templates}");
   while ($template = db_fetch_object($result)) {
     // The title_placeholder eventually gets run through check_plain().
-    $info['sources']['activity_log'][$template->tid] = array(
-      'title_placeholder' => $rules[$template->rule]['#label'] .' - '. $template->action_label,
+    $info['sources']['act_log']['event:'. $template->tid] = array(
+      'title_placeholder' => 'triggered event - '. $rules[$template->rule]['#label'] .' - '. $template->action_label,
+      'description' => 'Energy for an event triggered by the action <em>'. $template->action_label .'</em> in the rule <em>'. $rules[$template->rule]['#label'] .'</em>.',
+    );
+    $info['sources']['act_log']['group:'. $template->tid] = array(
+      'title_placeholder' => 'event added to group - '. $rules[$template->rule]['#label'] .' - '. $template->action_label,
+      'description' => 'Energy for an event triggered by the action <em>'. $template->action_label .'</em> in the rule <em>'. $rules[$template->rule]['#label'] .'</em>. '.
+        'Note that this is <em>instead of (not in addition to)</em> the "triggered event" energy for this action.',
     );
   }
   return $info;
@@ -466,9 +476,24 @@ function activity_log_radioactivity_info() {
 /**
  * Implementation of hook_activity_log_event().
  */
-function activity_log_activity_log_event($record, $settings) {
+function activity_log_activity_log_event($record, $group, $settings) {
   module_load_include('inc', 'radioactivity');
-  radioactivity_add_energy($record->aid, 'activity_log', $record->tid);
+  $aids = explode(',', $group->aids);
+  if (count($aids) > 1) {
+    radioactivity_add_energy($group->mid, 'act_log', 'group:'. $record->tid);
+  }
+  else {
+    radioactivity_add_energy($group->mid, 'act_log', 'event:'. $record->tid);
+  }
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter().
+ */
+function activity_log_form_radioactivity_admin_profile_form_alter(&$form, $form_state) {
+  if (isset($form['energy']['act_log']['no_sources'])) {
+    $form['energy']['act_log']['no_sources']['#value'] = t('You must create a Rule that logs activity before you can assign energy to activities.');
+  }
 }
 
 //=====================================
