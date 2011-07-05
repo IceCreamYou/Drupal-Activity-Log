@@ -12,12 +12,6 @@ function activity_log_views_handlers() {
       'activity_log_views_handler_field_mid' => array(
         'parent' => 'views_handler_field',
       ),
-      'activity_log_views_handler_filter_owner' => array(
-        'parent' => 'views_handler_filter_numeric',
-      ),
-      'activity_log_views_handler_argument_owner' => array(
-        'parent' => 'views_handler_argument_numeric',
-      )
     ),
   );
 }
@@ -57,10 +51,21 @@ function activity_log_views_data() {
     'title' => t('Stream Owner'),
     'help' => t('The entity in whose activity stream the messages are intended to appear'),
     'filter' => array(
-      'handler' => 'activity_log_views_handler_filter_owner',
+      'handler' => 'views_handler_filter_numeric',
     ),
     'argument' => array(
-      'handler' => 'activity_log_views_handler_argument_owner',
+      'handler' => 'views_handler_argument_numeric',
+    ),
+  );
+  
+  $data['activity_log_messages']['stream_owner_type'] = array(
+    'title' => t('Stream Owner'),
+    'help' => t('The type of entity in whose activity stream the messages are intended to appear'),
+    'filter' => array(
+      'handler' => 'views_handler_filter',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
     ),
   );
   
