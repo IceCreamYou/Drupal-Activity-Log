@@ -197,14 +197,15 @@ function activity_log_theme($existing, $type, $theme, $path) {
  */
 function theme_activity_log_item($record) {
   $classes = array();
-  $classes[] = 'activity-message-rule-'. $record->rule;
-  $classes[] = 'activity-message-action-'. strtolower(str_replace(' ', '_', $record->action_label));
-  if (count($record->events) === 1){
+  $classes[] = 'activity-log-rule-'. $record->rule;
+  $classes[] = 'activity-log-action-'. strtolower(preg_replace('%[^\w\-]%', '', str_replace(' ', '_', $record->action_label)));
+  if (count($record->events) === 1) {
     $classes[] = 'activity-message-single';
-  }else{
+  }
+  else {
     $classes[] = 'activity-message-grouped';
   }
-  return '<div class="activity-message '. implode($classes, ' ') .'">'. activity_log_evaluate_record($record) .'</div>';
+  return '<div class="activity-message '. implode(' ', $classes) .'">'. activity_log_evaluate_record($record) .'</div>';
 }
 
 /**
