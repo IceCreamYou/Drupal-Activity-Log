@@ -4,7 +4,7 @@
  * Implementation of hook_views_default_views().
  */
 function activity_log_views_default_views() {
- 
+  
   $view = new view;
   $view->name = 'activity_log_stream';
   $view->description = 'An example stream showing all logged activity on the site';
@@ -16,37 +16,6 @@ function activity_log_views_default_views() {
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->override_option('fields', array(
-    'created' => array(
-      'label' => '',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
-      'empty' => '',
-      'hide_empty' => 0,
-      'empty_zero' => 0,
-      'date_format' => 'small',
-      'custom_date_format' => '',
-      'exclude' => 0,
-      'id' => 'created',
-      'table' => 'activity_log_messages',
-      'field' => 'created',
-      'relationship' => 'none',
-    ),
     'message' => array(
       'label' => '',
       'alter' => array(
@@ -200,7 +169,7 @@ function activity_log_views_default_views() {
   $handler->override_option('empty_format', '1');
   $handler->override_option('use_pager', '1');
   $handler = $view->new_display('page', 'Page', 'page_1');
-  $handler->override_option('path', 'activty');
+  $handler->override_option('path', 'activities');
   $handler->override_option('menu', array(
     'type' => 'normal',
     'title' => 'Activity Stream',
@@ -215,7 +184,7 @@ function activity_log_views_default_views() {
     'weight' => 0,
     'name' => 'navigation',
   ));
- 
+  
   $views[$view->name] = $view;
   return $views;
 }
