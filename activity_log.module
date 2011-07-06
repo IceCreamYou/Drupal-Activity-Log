@@ -426,7 +426,7 @@ function activity_log_get_rules_data_types($options = array()) {
       $types['taxonomy_vocab'],
       $types['boolean'],
       $types['global'],
-      $types['decay_profile'],
+      $types['decay_profile']
     );
   }
   if ($options['short taxonomy'] && module_exists('taxonomy')) {

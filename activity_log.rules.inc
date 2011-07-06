@@ -17,7 +17,7 @@ function activity_log_log_action_form($settings, &$form) {
   $settings += array(
     'public_name' => '',
     'grouping' => array(
-      'group_method' => 'target_action',
+      'group_method' => 'none',
       'group_interval' => 86400,
       'group_max' => 100,
       'group_summary' => '',
@@ -42,7 +42,7 @@ function activity_log_log_action_form($settings, &$form) {
     '#type' => 'fieldset',
     '#title' => t('Group similar messages'),
     '#collapsible' => TRUE,
-    '#collapsed' => empty($settings['grouping']['group_template']),
+    '#collapsed' => $settings['grouping']['group_template'] == 'none',
     '#description' => '<p>'. t('Filling in these settings will allow grouping activity messages of this type in activity streams.') .' '.
       t('That way, instead of saying e.g. "Jack likes this" and "Jill likes this" separately, only one message can appear saying "Jack and Jill like this."') .' '.
       t('Messages will be grouped if there are at least two similar messages.') .' '.
@@ -59,6 +59,7 @@ function activity_log_log_action_form($settings, &$form) {
     '#required' => TRUE,
     '#default_value' => $settings['grouping']['group_method'],
     '#options' => array(
+      'none' => t('Do not group actions of this type'),
       'target_action' => t('Group by action and the entity on which the action was performed'),
       'action' => t('Group by just the action'),
       'user_action' => t('Group by the acting user and the action performed'),
@@ -101,8 +102,7 @@ function activity_log_log_action_form($settings, &$form) {
       '<span id="activity-log-admin-description">'.
         t('Additionally, the token <em>[collection]</em> will be replaced with summaries of the target objects formatted according to the "Grouped item name" setting above.')
       .'</span> '.
-      t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .' '.
-      t('<strong>Leave this blank if you do not want this type of message to be grouped.</strong>') .'</p>',
+      t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .'</p>',
     '#default_value' => $settings['grouping']['group_template'],
     '#rows' => 3,
   );
@@ -466,47 +466,45 @@ function activity_log_log_action($settings) {
     'id_map' => $map_serialized,
   );
   drupal_write_record('activity_log_events', $record);
-  if (!empty($settings['grouping']['group_template'])) {
-    if ($settings['grouping']['group_method'] == 'target_action') {
-      $mid = db_result(db_query_range("
-        SELECT mid
-        FROM {activity_log_messages}
-        WHERE
-          tid = %d AND                 /* group by activity type */
-          stream_owner_id = %d AND     /* group by stream the message appears in */
-          stream_owner_type = '%s' AND
-          target_id = %d AND           /* group by target entity */
-          target_type = '%s'
-        ORDER BY mid DESC
-      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->target_id, $record->target_type, 0, 1));
-    }
-    elseif ($settings['grouping']['group_method'] == 'action') {
-      $mid = db_result(db_query_range("
-        SELECT mid
-        FROM {activity_log_messages}
-        WHERE
-          tid = %d AND                 /* group by activity type */
-          stream_owner_id = %d AND     /* group by stream the message appears in */
-          stream_owner_type = '%s' AND
-          created > %d AND             /* filter to groups that are new enough */
-          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
-        ORDER BY mid DESC
-      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
-    }
-    elseif ($settings['grouping']['group_method'] == 'user_action') {
-      $mid = db_result(db_query_range("
-        SELECT mid
-        FROM {activity_log_messages}
-        WHERE
-          tid = %d AND                 /* group by activity type */
-          stream_owner_id = %d AND     /* group by stream the message appears in */
-          stream_owner_type = '%s' AND
-          acting_uid = %d AND          /* filter by action user */
-          created > %d AND             /* filter to groups that are new enough */
-          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
-        ORDER BY mid DESC
-      ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
-    }
+  if ($settings['grouping']['group_method'] == 'target_action') {
+    $mid = db_result(db_query_range("
+      SELECT mid
+      FROM {activity_log_messages}
+      WHERE
+        tid = %d AND                 /* group by activity type */
+        stream_owner_id = %d AND     /* group by stream the message appears in */
+        stream_owner_type = '%s' AND
+        target_id = %d AND           /* group by target entity */
+        target_type = '%s'
+      ORDER BY mid DESC
+    ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->target_id, $record->target_type, 0, 1));
+  }
+  elseif ($settings['grouping']['group_method'] == 'action') {
+    $mid = db_result(db_query_range("
+      SELECT mid
+      FROM {activity_log_messages}
+      WHERE
+        tid = %d AND                 /* group by activity type */
+        stream_owner_id = %d AND     /* group by stream the message appears in */
+        stream_owner_type = '%s' AND
+        created > %d AND             /* filter to groups that are new enough */
+        LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
+      ORDER BY mid DESC
+    ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
+  }
+  elseif ($settings['grouping']['group_method'] == 'user_action') {
+    $mid = db_result(db_query_range("
+      SELECT mid
+      FROM {activity_log_messages}
+      WHERE
+        tid = %d AND                 /* group by activity type */
+        stream_owner_id = %d AND     /* group by stream the message appears in */
+        stream_owner_type = '%s' AND
+        acting_uid = %d AND          /* filter by action user */
+        created > %d AND             /* filter to groups that are new enough */
+        LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
+      ORDER BY mid DESC
+    ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
   }
   if (!empty($mid)) {
     db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, %d, ','), last_updated = %d WHERE mid = %d", $record->aid, $record->created, $mid);
