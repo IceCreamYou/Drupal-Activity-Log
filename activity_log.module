@@ -196,7 +196,15 @@ function activity_log_theme($existing, $type, $theme, $path) {
  *   The themed activity message.
  */
 function theme_activity_log_item($record) {
-  return '<div class="activity-message">'. activity_log_evaluate_record($record) .'</div>';
+  $classes = array();
+  $classes[] = 'activity-message-rule-'. $record->rule;
+  $classes[] = 'activity-message-action-'. strtolower(str_replace(' ', '_', $record->action_label));
+  if (count($record->events) === 1){
+    $classes[] = 'activity-message-single';
+  }else{
+    $classes[] = 'activity-message-grouped';
+  }
+  return '<div class="activity-message '. implode($classes, ' ') .'">'. activity_log_evaluate_record($record) .'</div>';
 }
 
 /**
@@ -230,7 +238,7 @@ function theme_activity_log_collapse($collection = array(), $method = 'activity_
   else {
     $output = $method($collection, $count);
   }
-  return '<span class="activity-log-collection">'. $output .'</span>';
+  return '<span class="activity-log-collection activity-log-collection-method-'. $method .'">'. $output .'</span>';
 }
 
 //====================================
