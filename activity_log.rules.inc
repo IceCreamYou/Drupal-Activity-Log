@@ -506,7 +506,7 @@ function activity_log_log_action($settings) {
           stream_owner_id = %d AND     /* group by stream the message appears in */
           stream_owner_type = '%s' AND
           created > %d AND             /* filter to groups that are new enough */
-          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
+          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
         ORDER BY mid DESC
       ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
     }
@@ -520,19 +520,19 @@ function activity_log_log_action($settings) {
           stream_owner_type = '%s' AND
           acting_uid = %d AND          /* filter by action user */
           created > %d AND             /* filter to groups that are new enough */
-          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) < %d /* filter to groups that don't have too many items in them already */
+          LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
         ORDER BY mid DESC
       ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
     }
   }
   if (!empty($mid)) {
-    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, ',', %d), last_updated = %d WHERE mid = %d", $record->aid, $record->created, $mid);
+    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, %d, ','), last_updated = %d WHERE mid = %d", $record->aid, $record->created, $mid);
     $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE mid = %d", $mid));
   }
   else {
     $group = (object) array(
       'tid' => $record->tid,
-      'aids' => $record->aid,
+      'aids' => ','. $record->aid .',',
       'created' => $record->created,
       'last_updated' => $record->created,
       'stream_owner_id' => $record->stream_owner_id,

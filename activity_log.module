@@ -255,7 +255,7 @@ function activity_log_load($mid) {
   ", $mid));
   $record->eval_input = unserialize($record->eval_input);
   rules_include('rules');
-  $aids = explode(',', $record->aids);
+  $aids = array_filter(explode(',', $record->aids));
   $record->events = array();
   $result = db_query("
     SELECT * FROM {activity_log_events} WHERE aid IN (". db_placeholders($aids) .")
@@ -531,6 +531,25 @@ function activity_log_radioactivity_info() {
         'Note that this is <em>instead of (not in addition to)</em> the "triggered event" energy for this action.',
     );
   }
+  if (module_exists('fbss_comments')) {
+    $info['sources']['act_log']['fbss_comments'] = array(
+      'title_placeholder' => 'status update - commented',
+      'description' => 'Energy for the activity message about the commented status',
+    );
+  }
+  if (module_exists('flag')) {
+    $types = flag_get_types();
+    foreach ($types as $type) {
+      if (!in_array($type, array('comment', 'fbss_comment'))) {
+        foreach (flag_get_flags($type) as $name => $details) {
+          $info['sources']['act_log']['flag:'. $name] = array(
+            'title_placeholder' => 'flagged - '. $name,
+            'description' => 'Energy for the activity message about the flagged entity',
+          );
+        }
+      }
+    }
+  }
   return $info;
 }
 
@@ -540,12 +559,38 @@ function activity_log_radioactivity_info() {
 function activity_log_activity_log_event($event, $group, $settings) {
   if (module_exists('radioactivity')) {
     module_load_include('inc', 'radioactivity');
-    $aids = explode(',', $group->aids);
+    $aids = array_filter(explode(',', $group->aids));
     if (count($aids) > 1) {
       radioactivity_add_energy($group->mid, 'act_log', 'group:'. $group->tid);
     }
     else {
       radioactivity_add_energy($group->mid, 'act_log', 'event:'. $group->tid);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_fbss_comments_after_save().
+ */
+function activity_log_fbss_comments_after_save($comment, $edit) {
+  if (module_exists('radioactivity')) {
+    module_load_include('inc', 'radioactivity');
+    $result = db_query("SELECT mid FROM {activity_log_messages} WHERE target_type = 'facebook_status' AND target_id = %d", $comment->sid);
+    while ($message = db_fetch_object($result)) {
+      radioactivity_add_energy($message->mid, 'act_log', 'fbss_comments');
+    }
+  }
+}
+
+/**
+ * Implementation of hook_flag().
+ */
+function activity_log_flag($event, $flag, $content_id, $account) {
+  if (module_exists('radioactivity')) {
+    module_load_include('inc', 'radioactivity');
+    $result = db_query("SELECT mid FROM {activity_log_messages} WHERE target_type = '%s' AND target_id = %d", $flag->content_type, $content_id);
+    while ($message = db_fetch_object($result)) {
+      radioactivity_add_energy($message->mid, 'act_log', 'flag:'. $flag->name);
     }
   }
 }
