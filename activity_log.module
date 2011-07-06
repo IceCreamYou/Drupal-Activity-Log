@@ -372,6 +372,75 @@ function activity_log_user_load($uid) {
   return $accounts[$uid];
 }
 
+/**
+ * Retrieves a list of Rules data types, which Activity Log uses to identify
+ * the data type of stream owners and target objects.
+ *
+ * @param $options
+ *   An array of options controlling what gets returned. Options include:
+ *   - short taxonomy: Whether to change "taxonomy_term" to just "term" and
+ *     taxonomy_vocab to just "vocab." Defaults to FALSE.
+ *   - stream owner types: How to restrict the returned values to just those
+ *     that can be used as stream owner types. Can be one of these values
+ *     (defaults to "normal"):
+ *     - normal: Returns the node, taxonomy term, and user types.
+ *     - adventurous: Same as normal, plus any non-default types (not including
+ *       the fbss_comment type). May require manual restriction if this is used
+ *       since stream owner types should generally be limited to those with
+ *       individual pages dedicated to each instance of them, where it makes
+ *       sense to show activity related to that instance.
+ *     - all: Show all Rules data types.
+ *   - exclude stream owner types: An array of types to exclude from the
+ *     returned list. Not applicable if "stream owner types" is "normal."
+ * @return
+ *   An array of Rules data types that can be used as the value of the #options
+ *   parameter in a form element. The keys of the array are the machine names,
+ *   and the values are the translated, human-friendly names.
+ */
+function activity_log_get_rules_data_types($options = array()) {
+  $options += array(
+    'short taxonomy' => FALSE,
+    'stream owner types' => 'normal',
+    'exclude stream owner types' => array(),
+  );
+  if ($options['stream owner types'] == 'normal' || !module_exists('rules_admin')) {
+    return array(
+      'node' => t('Content'),
+      ($options['short taxonomy'] ? 'term' : 'taxonomy_term') => t('Taxonomy term'),
+      'user' => t('User'),
+    );
+  }
+  module_load_include('inc', 'rules_admin');
+  // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
+  $types = rules_extract_property(array_filter(rules_get_data_types(), 'rules_admin_element_filter'), 'label');
+  $types = array_map('drupal_ucfirst', $options);
+  if ($options['stream owner types'] == 'adventurous') {
+    unset(
+      $types['comment'],
+      $types['date'],
+      $types['fbsmp'],
+      $types['fbss_comment'],
+      $types['flag'],
+      $types['number'],
+      $types['string'],
+      $types['taxonomy_vocab'],
+      $types['boolean'],
+      $types['global'],
+      $types['decay_profile'],
+    );
+  }
+  if ($options['short taxonomy'] && module_exists('taxonomy')) {
+    $types['term'] = $types['taxonomy_term'];
+    $types['vocab'] = $types['taxonomy_vocab'];
+    unset($types['taxonomy_term'], $types['taxonomy_vocab']);
+  }
+  foreach ($options['exclude stream owner types'] as $type) {
+    unset($types[$type]);
+  }
+  asort($types);
+  return $types;
+}
+
 //================================
 // COLLECTION COLLAPSING METHODS.
 //================================

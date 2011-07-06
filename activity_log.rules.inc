@@ -120,29 +120,12 @@ function activity_log_log_action_form($settings, &$form) {
     '#default_value' => $settings['stream_owner'],
     '#required' => TRUE,
   );
-  // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
-  $options = rules_extract_property(array_filter(rules_get_data_types(), 'rules_admin_element_filter'), 'label');
-  $options = array_map('drupal_ucfirst', $options);
-  // It only makes sense to offer options that have their own unique pages.
-  unset(
-    $options['comment'],
-    $options['date'],
-    $options['fbsmp'],
-    $options['fbss_comment'],
-    $options['flag'],
-    $options['number'],
-    $options['string'],
-    $options['taxonomy_vocab'],
-    $options['boolean'],
-    $options['global']
-  );
-  asort($options);
   $form['settings']['type'] = array(
     '#type' => 'select',
     '#title' => t('Stream type'),
     '#description' => t('The type of entity on whose stream the activity record will appear.'),
     '#default_value' => $settings['type'],
-    '#options' => $options,
+    '#options' => activity_log_get_rules_data_types(),
     '#required' => TRUE,
   );
   $form['settings']['acting_user'] = array(
