@@ -391,7 +391,7 @@ function activity_log_input_evaluator_process_apply($string, $data = NULL, &$sta
   // Get information about all the variables that should be available when evaluating input.
   $map = array();
   foreach ($state['variables'] as $name => $info) {
-    if (!empty($info->data)) {
+    if (!empty($info->data) && is_object($info->data->_data)) {
       $map[$name] = array(
         'id' => activity_log_get_id($info->data->_data),
         'type' => $info->info['type'],
