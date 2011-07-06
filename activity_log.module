@@ -642,4 +642,3 @@ function activity_log_views_api(){
     'path' => drupal_get_path('module', 'activity_log') . '/views',
   );
 }
-

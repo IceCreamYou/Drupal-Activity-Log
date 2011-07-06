@@ -1,6 +1,21 @@
 <?php
 
 /**
+ * @file
+ *   Views integration for Activity Log.
+ */
+
+/**
+ * Implementation of hook_views_query_alter().
+ */
+function activity_log_views_query_alter(&$view, &$query) {
+  if ($query->base_table == 'activity_log_messages') {
+    $query->ensure_table('activity_log_templates');
+    $query->add_where(0, db_prefix_tables("{activity_log_templates}.pid NOT IN (SELECT pid FROM {activity_log_disabled_types} WHERE uid = %d)"), $GLOBALS['user']->uid);
+  }
+}
+
+/**
  * Implementation of hook_views_handlers().
  */
 function activity_log_views_handlers() {
