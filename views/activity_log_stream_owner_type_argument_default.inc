@@ -44,8 +44,8 @@ class activity_log_stream_owner_type_argument_default extends views_plugin_argum
     
   }
   
-  function get_argument(){
-    if (!empty($this->argument->options[$this->option_name])){
+  function get_argument() {
+    if (!empty($this->argument->options[$this->option_name])) {
      return $this->argument->options[$this->option_name];
     }
   }
