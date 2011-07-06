@@ -15,6 +15,9 @@ function activity_log_views_handlers() {
       'activity_log_views_handler_filter_owner_type' => array(
         'parent' => 'views_handler_filter',
       ),
+      'activity_log_views_handler_sort_radioactivity' => array(
+        'parent' => 'views_handler_sort',
+      ),
     ),
   );
 }
@@ -22,7 +25,7 @@ function activity_log_views_handlers() {
 /**
  * Implementation of hook_views_plugins().
  */
-function activity_log_views_plugins(){
+function activity_log_views_plugins() {
   return array(
     'argument validator' => array(
       'activity_log_validate_stream_owner_type' => array(
@@ -47,17 +50,17 @@ function activity_log_views_plugins(){
  */
 function activity_log_views_data() {
 
-  // The messages table
+  // The messages table.
 
   $data['activity_log_messages']['table']['group'] = t('Activity Log');
-  
+
   $data['activity_log_messages']['table']['base'] = array(
     'field' => 'mid',
     'title' => t('Activity Log'),
     'help' => t('Activities logged by the Activity log module'),
     'weight' => -10,
   );
-  
+
   $data['activity_log_messages']['mid'] = array(
     'title' => t('Activity Log message id'),
     'help' => t('The numeric id of the recorded message'),
@@ -74,7 +77,7 @@ function activity_log_views_data() {
       'handler' => 'views_handler_argument_numeric',
     ),
   );
-  
+
   $data['activity_log_messages']['message'] = array(
     'title' => t('Activity Log message'),
     'help' => t('The evaluated template from the event'),
@@ -83,7 +86,7 @@ function activity_log_views_data() {
       'handler' => 'activity_log_views_handler_field_mid',
     ),
   );
-  
+
   $data['activity_log_messages']['stream_owner_id'] = array(
     'title' => t('Stream owner'),
     'help' => t('The entity in whose activity stream the messages are intended to appear'),
@@ -94,7 +97,7 @@ function activity_log_views_data() {
       'handler' => 'views_handler_argument_numeric',
     ),
   );
-  
+
   $data['activity_log_messages']['stream_owner_type'] = array(
     'title' => t('Stream owner type'),
     'help' => t('The type of entity in whose activity stream the messages are intended to appear'),
@@ -105,7 +108,7 @@ function activity_log_views_data() {
       'handler' => 'views_handler_argument_string',
     ),
   );
-  
+
   $data['activity_log_messages']['created'] = array(
     'title' => t('Created time'),
     'help' => t('The time at which the message (or first message if grouping is enabled) was recorded'),
@@ -123,7 +126,7 @@ function activity_log_views_data() {
       'handler' => 'views_handler_argument_date',
     ),
   );
-  
+
   $data['activity_log_messages']['last_updated'] = array(
     'title' => t('Updated time'),
     'help' => t('The time at which the most recent message was added to a grouped message'),
@@ -141,9 +144,9 @@ function activity_log_views_data() {
       'handler' => 'views_handler_argument_date',
     ),
   );
-  
+
   // The templates table
-  
+
   $data['activity_log_templates']['table']['group'] = t('Activity Log');
   
   $data['activity_log_templates']['table']['join'] = array(
@@ -152,7 +155,7 @@ function activity_log_views_data() {
       'field' => 'tid',
     ),
   );
-  
+
   $data['activity_log_templates']['rule'] = array(
     'title' => t('Rule name'),
     'help' => t('The machine name of the rule that triggered the message'),
@@ -161,7 +164,7 @@ function activity_log_views_data() {
       'click sortable' => 'true',
     ),
   );
-  
+
   $data['activity_log_templates']['action_label'] = array(
     'title' => t('Action label'),
     'help' => t('The the label of the action that triggered the message'),
@@ -170,6 +173,39 @@ function activity_log_views_data() {
       'click sortable' => 'true',
     ),
   );
-  
+
+  // Radioactivity integration
+
+  foreach (radioactivity_get_decay_profiles() as $dpid => $decay_profile) {
+    $data['radioactivity']['table']['group'] = t('Radioactivity (@profile)', array('@profile' => $decay_profile['label']));
+    $data['radioactivity']['table']['title'] = t('Activity energy');
+    $data['radioactivity']['table']['help'] = t('Activity radioactive energy in decay profile @profile.', array('@profile' => $decay_profile['label']));
+
+    $data['radioactivity']['table']['join']['activity_log_messages'] = array(
+      'left_field' => 'nid',
+      'field' => 'id',
+      'table' => 'radioactivity',
+      'extra' => array(
+        array(
+          'field' => 'class',
+          'value' => 'act_log',
+        ),
+        array(
+          'field' => 'decay_profile',
+          'value' => $dpid,
+          'numeric' => TRUE,
+        ),
+      ),
+    );
+
+    $data['radioactivity']['energy'] = array(
+      'title' => t('Node energy'),
+      'help' => t('The radioactive energy of the node.'),
+      'sort' => array(
+        'handler' => 'activity_log_views_handler_sort_radioactivity',
+      ),
+    );
+  }
+
   return $data;
 }
