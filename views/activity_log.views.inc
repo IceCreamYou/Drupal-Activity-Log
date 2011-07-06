@@ -20,24 +20,49 @@ function activity_log_views_handlers() {
 }
 
 /**
+ * Implementation of hook_views_plugins().
+ */
+function activity_log_views_plugins(){
+  return array(
+    'argument validator' => array(
+      'activity_log_validate_stream_owner_type' => array(
+        'title' => t('Stream type'),
+        'path' => drupal_get_path('module', 'activity_log') .'/views',
+        'handler' => 'activity_log_stream_owner_type_argument_validate',
+      ),
+    ),
+    'argument default' => array(
+      'activity_log_default_stream_owner_type' => array(
+        'title' => t('Stream type'),
+        'path' => drupal_get_path('module', 'activity_log') .'/views',
+        'handler' => 'activity_log_stream_owner_type_argument_default',
+        'parent' => 'fixed',
+      ),
+    ),
+  );
+}
+
+/**
  * Implementation of hook_views_data().
  */
 function activity_log_views_data() {
+
+  // The messages table
 
   $data['activity_log_messages']['table']['group'] = t('Activity Log');
   
   $data['activity_log_messages']['table']['base'] = array(
     'field' => 'mid',
-    'title' => t('Activity log'),
+    'title' => t('Activity Log'),
     'help' => t('Activities logged by the Activity log module'),
     'weight' => -10,
   );
   
   $data['activity_log_messages']['mid'] = array(
-    'title' => t('Activity log message'),
-    'help' => t('The evaluated template from the event'),
+    'title' => t('Activity Log message id'),
+    'help' => t('The numeric id of the recorded message'),
     'field' => array(
-      'handler' => 'activity_log_views_handler_field_mid',
+      'handler' => 'views_handler_field',
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -47,6 +72,15 @@ function activity_log_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
+    ),
+  );
+  
+  $data['activity_log_messages']['message'] = array(
+    'title' => t('Activity Log message'),
+    'help' => t('The evaluated template from the event'),
+    'field' => array(
+      'field' => 'mid',
+      'handler' => 'activity_log_views_handler_field_mid',
     ),
   );
   
@@ -105,6 +139,35 @@ function activity_log_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_date',
+    ),
+  );
+  
+  // The templates table
+  
+  $data['activity_log_templates']['table']['group'] = t('Activity Log');
+  
+  $data['activity_log_templates']['table']['join'] = array(
+    'activity_log_messages' => array(
+      'left_field' => 'tid',
+      'field' => 'tid',
+    ),
+  );
+  
+  $data['activity_log_templates']['rule'] = array(
+    'title' => t('Rule name'),
+    'help' => t('The machine name of the rule that triggered the message'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => 'true',
+    ),
+  );
+  
+  $data['activity_log_templates']['action_label'] = array(
+    'title' => t('Action label'),
+    'help' => t('The the label of the action that triggered the message'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => 'true',
     ),
   );
   

@@ -1,18 +1,17 @@
 <?php
-
+  
 /**
  * @file
- *   Extends views_handler_filter_many_to_one with support for activity log 
- *  stream types
+ *   Adds an option to validate arguments as stream owner types.
  */
 
-class activity_log_views_handler_filter_owner_type extends views_handler_filter {
-  
-  /*
-   * Override the value_form funtion to use a select box of strean types
-   */
-  function value_form(&$form, &$form_state) {
-
+/**
+ * Validate whether an argument is a valid stream owner type.
+ */
+class activity_log_stream_owner_type_argument_validate extends views_plugin_argument_validate {
+  var $option_name = 'validate_argument_activity_log_stream_owner_type';
+  function validate_argument($argument) {
+    
     require_once(drupal_get_path('module', 'rules_admin') . '/rules_admin.inc');
     
     // Get a list of Rules data types we know about. @see _rules_admin_form_argument()
@@ -31,15 +30,8 @@ class activity_log_views_handler_filter_owner_type extends views_handler_filter 
       $options['boolean'],
       $options['global']
     );
-    asort($options);
     
-    $form['value'] = array(
-      '#type' => 'select',
-      '#title' => t('Stream type'),
-      '#description' => t('The type of entity on whose stream the activity is intended to appear.'),
-      '#default_value' => $this->options['type'],
-      '#options' => $options,
-      '#required' => TRUE,
-    );
+    return in_array($argument, array_keys($options));
+    
   }
 }
