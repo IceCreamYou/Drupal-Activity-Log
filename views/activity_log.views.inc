@@ -20,6 +20,29 @@ function activity_log_views_handlers() {
 }
 
 /**
+ * Implementation of hook_views_plugins().
+ */
+function activity_log_views_plugins(){
+  return array(
+    'argument validator' => array(
+      'activity_log_validate_stream_owner_type' => array(
+        'title' => t('Stream Type'),
+        'path' => drupal_get_path('module', 'activity_log') .'/views',
+        'handler' => 'activity_log_stream_owner_type_argument_validate',
+      ),
+    ),
+    'argument default' => array(
+      'activity_log_default_stream_owner_type' => array(
+        'title' => t('Stream Type'),
+        'path' => drupal_get_path('module', 'activity_log') .'/views',
+        'handler' => 'activity_log_stream_owner_type_argument_default',
+        'parent' => 'fixed',
+      ),
+    ),
+  );
+}
+
+/**
  * Implementation of hook_views_data().
  */
 function activity_log_views_data() {
@@ -28,13 +51,13 @@ function activity_log_views_data() {
   
   $data['activity_log_messages']['table']['base'] = array(
     'field' => 'mid',
-    'title' => t('Activity log'),
+    'title' => t('Activity Log'),
     'help' => t('Activities logged by the Activity log module'),
     'weight' => -10,
   );
   
   $data['activity_log_messages']['mid'] = array(
-    'title' => t('Activity log message'),
+    'title' => t('Activity Log message'),
     'help' => t('The evaluated template from the event'),
     'field' => array(
       'handler' => 'activity_log_views_handler_field_mid',

@@ -37,7 +37,6 @@ class activity_log_views_handler_filter_owner_type extends views_handler_filter 
       '#type' => 'select',
       '#title' => t('Stream type'),
       '#description' => t('The type of entity on whose stream the activity is intended to appear.'),
-      //'#default_value' => (empty($this->options['type']) ? 'user' : $this->options['type']),
       '#default_value' => $this->options['type'],
       '#options' => $options,
       '#required' => TRUE,
