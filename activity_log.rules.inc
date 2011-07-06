@@ -268,7 +268,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
       DELETE {activity_log_disabled_types}
       FROM {activity_log_disabled_types}
       LEFT JOIN {activity_log_templates}
-        ON {activity_log_action_names}.pid = {activity_log_templates}.pid
+        ON {activity_log_disabled_types}.pid = {activity_log_templates}.pid
       WHERE {activity_log_templates}.tid IS NULL
     ");
     db_query("
