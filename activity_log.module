@@ -301,13 +301,9 @@ function activity_log_evaluate_record($record) {
   ));
   // Swap in the translated template if languages are enabled
   if (count(language_list()) > 1) {
-    global $language;
     global $user;
-    if (isset($user->language)) {
-      $lang = $user->language;
-    } else {
-      $lang = $language->language;
-    }
+    $lang = user_preferred_language($user);
+    $lang = $lang->language;
     $translations = unserialize($record->translations);
     if (!empty($translations)) {
       // Check for single templates
