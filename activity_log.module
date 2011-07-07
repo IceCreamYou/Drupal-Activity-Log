@@ -533,8 +533,10 @@ function activity_log_collapse_list_vertical($collection, $count) {
  *   - weight: (Optional) The group's weight in an ordering of all groups.
  *     Lighter weights float to the top. Defaults to 0.
  *   - expose fields: (Optional) An array of which additional fields should be
- *     exposed if this group is selected. Valid values for this array are "id"
- *     and "type." Defaults to array().
+ *     exposed if this group is selected. Valid values for this array are "id,"
+ *     "type," and "acting_uid." Defaults to array().
+ *   - additional arguments: (Optional) Extra arguments to pass to the items
+ *     callback.
  *   - file: (Optional) The file where the items callback exists.
  */
 function activity_log_activity_log_entity_groups($stream_owner = TRUE) {
