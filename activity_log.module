@@ -441,6 +441,18 @@ function activity_log_get_rules_data_types($options = array()) {
   return $types;
 }
 
+/**
+ * Callback for uasort() to sort arrays by weight and maintain index association.
+ */
+function activity_log_element_sort($a, $b) {
+  $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
+  $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
+  if ($a_weight == $b_weight) {
+    return 0;
+  }
+  return ($a_weight < $b_weight) ? -1 : 1;
+}
+
 //================================
 // COLLECTION COLLAPSING METHODS.
 //================================
@@ -534,7 +546,8 @@ function activity_log_collapse_list_vertical($collection, $count) {
  *     Lighter weights float to the top. Defaults to 0.
  *   - expose fields: (Optional) An array of which additional fields should be
  *     exposed if this group is selected. Valid values for this array are "id,"
- *     "type," and "acting_uid." Defaults to array().
+ *     "type," and (if you know what you're doing) "acting_uid." Defaults to
+ *     array().
  *   - additional arguments: (Optional) Extra arguments to pass to the items
  *     callback.
  *   - file: (Optional) The file where the items callback exists.

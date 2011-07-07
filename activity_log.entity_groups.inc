@@ -24,7 +24,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     'acting user' => array(
       'items callback' => 'activity_log_eg_acting_user',
       'title' => t('Acting user'),
-      'expose fields' => array('acting_uid'),
+      //'expose fields' => array('acting_uid'),
     ),
     'target entity' => array(
       'items callback' => 'activity_log_eg_target_entity',
@@ -46,7 +46,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['acting user relationships'] = array(
       'items callback' => 'activity_log_eg_acting_user_rels',
       'title' => t("The acting user's relationships"),
-      'expose fields' => array('acting_uid'),
+      //'expose fields' => array('acting_uid'),
     );
     $groups['custom user relationships'] = array(
       'items callback' => 'activity_log_eg_custom_user_rels',
@@ -58,7 +58,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       $groups['acting user relationships '. $type->rtid] = array(
         'items callback' => 'activity_log_eg_acting_user_rels_type',
         'title' => t("The acting user's %type relationships", array('%type' => $type->name)),
-        'expose fields' => array('acting_uid'),
+        //'expose fields' => array('acting_uid'),
         'additional arguments' => array($type),
       );
       $groups['custom user relationships '. $type->rtid] = array(
@@ -73,7 +73,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['active groups relationships acting user'] = array(
       'items callback' => 'activity_log_eg_active_groups_rels_acting_user',
       'title' => t('Members of active groups who have a relationship with the acting user'),
-      'expose fields' => array('acting_uid'),
+      //'expose fields' => array('acting_uid'),
     );
     $groups['active groups relationships custom user'] = array(
       'items callback' => 'activity_log_eg_active_groups_rels_custom_user',
@@ -84,7 +84,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       $groups['active groups relationships '. $type->rtid .' acting user'] = array(
         'items callback' => 'activity_log_eg_active_groups_rels_type_acting_user',
         'title' => t('Members of active groups who have a %type relationship with the acting user', array('%type' => $type->name)),
-        'expose fields' => array('acting_uid'),
+        //'expose fields' => array('acting_uid'),
         'additional arguments' => array($type),
       );
       $groups['active groups relationships '. $type->rtid .' custom user'] = array(

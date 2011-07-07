@@ -25,9 +25,9 @@ function activity_log_log_action_form($settings, &$form) {
       'group_template' => '',
     ),
     'template' => '',
-    'stream_owner' => '',
-    'type' => 'user',
-    'acting_user' => '',
+    'stream_owner_id' => '',
+    'stream_owner_type' => 'user',
+    'acting_uid' => '',
   );
   $form['settings']['public_name'] = array(
     '#type' => 'textfield',
@@ -113,26 +113,44 @@ function activity_log_log_action_form($settings, &$form) {
     '#rows' => 3,
     '#required' => TRUE,
   );
-  $form['settings']['stream_owner'] = array(
+  $groups = module_invoke_all('activity_log_entity_groups');
+  $options = array();
+  $expose_fields = array();
+  foreach ($groups as $name => $group) {
+    $options[$name] = $group['title'];
+    if (!empty($group['expose fields'])) {
+      $expose_fields[$name] = $group['expose fields'];
+    }
+  }
+  uasort($options, 'activity_log_element_sort');
+  drupal_add_js(array('activity_log' => array('stream_owner_expose_fields' => $expose_fields)), 'setting');
+  $form['settings']['stream_owner_entity_group'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Entities in whose stream activity records generated from this template should appear'),
+    '#description' => t('Not all available options make sense for every activity type.') .' '.
+      t('<strong>Warning:</strong> Choosing multiple streams can cause recording and retrieving activities to be slower on large sites.'),
+    '#required' => TRUE,
+    '#default_value' => $settings['stream_owner_entity_group'],
+    '#options' => $options,
+  );
+  $form['settings']['stream_owner_id'] = array(
     '#type' => 'textfield',
-    '#title' => t('Stream owner'),
+    '#title' => t('Custom stream owner ID'),
     '#description' => t('Enter the ID of the entity in whose activity stream the activity records generated from this template should appear.'),
-    '#default_value' => $settings['stream_owner'],
-    '#required' => TRUE,
+    '#default_value' => $settings['stream_owner_id'],
   );
-  $form['settings']['type'] = array(
+  $form['settings']['stream_owner_type'] = array(
     '#type' => 'select',
-    '#title' => t('Stream type'),
+    '#title' => t('Custom stream owner type'),
     '#description' => t('The type of entity on whose stream the activity record will appear.'),
-    '#default_value' => $settings['type'],
+    '#default_value' => $settings['stream_owner_type'],
     '#options' => activity_log_get_rules_data_types(),
-    '#required' => TRUE,
   );
-  $form['settings']['acting_user'] = array(
+  $form['settings']['acting_uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Acting user'),
     '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user.'),
-    '#default_value' => $settings['acting_user'],
+    '#default_value' => $settings['acting_uid'],
   );
 }
 
@@ -157,6 +175,7 @@ function activity_log_log_action_validate($form, $form_state) {
       }
     }
   }
+  // TODO: if a stream owner requires stream_owner_id or stream_owner_type, require that those fields have a value
 }
 
 /**
@@ -182,7 +201,7 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
       if (isset($form['settings']['template']['#default_value'])) {
         $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
       }
-      $form['#old_stream_owner'] = empty($form['settings']['stream_owner']['#default_value']) ? '' : $form['settings']['stream_owner']['#default_value'];
+      $form['#old_stream_owner_id'] = empty($form['settings']['stream_owner_id']['#default_value']) ? '' : $form['settings']['stream_owner_id']['#default_value'];
     }
     // Remove the help for our input evaluator (because it's internal, not user-facing).
     unset($form['input_help']['activity_log_input_evaluator_process']);
@@ -205,7 +224,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $rule = $form_state['proxy']->_rule_name;
   $tid = db_result(db_query("
     SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
-  ", $rule, $form['#old_stream_owner']));
+  ", $rule, $form['#old_stream_owner_id']));
   $name = new stdClass();
   $pid = 0;
   if (!empty($tid)) {
@@ -233,7 +252,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'group_template' => $form_state['values']['settings']['grouping']['group_template'],
     'group_summary' => $form_state['values']['settings']['grouping']['group_summary'],
     'collapse_method' => $form_state['values']['settings']['grouping']['collapse_method'],
-    'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
+    'stream_owner_id_template' => $form_state['values']['settings']['stream_owner_id'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
   );
@@ -303,13 +322,13 @@ function activity_log_rules_admin_form_delete($form, $form_state) {
   if (!empty($form['#parameters'][3])) {
     db_query("
       DELETE FROM {activity_log_events} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s')
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner']);
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner_id']);
     db_query("
       DELETE FROM {activity_log_messages} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s')
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner']);
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner_id']);
     db_query("
       DELETE FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner']);
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner_id']);
   }
 }
 
@@ -434,7 +453,7 @@ function activity_log_rules_action_info() {
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Activity Log',
-      'eval input' => array('grouping|group_summary', 'grouping|group_template', 'template', 'stream_owner', 'acting_user'),
+      'eval input' => array('grouping|group_summary', 'grouping|group_template', 'template', 'stream_owner_id', 'viewer_id', 'acting_uid'),
     ),
   );
 }
@@ -450,16 +469,16 @@ function activity_log_log_action($settings) {
   $map_serialized = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER));
   $map = unserialize($map_serialized);
   $target = reset($map); // returns the first element
-  if (empty($settings['acting_user'])) {
-    $settings['acting_user'] = $GLOBALS['user']->uid;
+  if (empty($settings['acting_uid'])) {
+    $settings['acting_uid'] = $GLOBALS['user']->uid;
   }
   // Store the event record.
   $record = (object) array(
     'tid' => $settings['tid'],
     'created' => $time,
-    'acting_uid' => $settings['acting_user'],
-    'stream_owner_id' => $settings['stream_owner'],
-    'stream_owner_type' => $settings['type'],
+    'acting_uid' => $settings['acting_uid'],
+    'stream_owner_id' => $settings['stream_owner_id'],
+    'stream_owner_type' => $settings['stream_owner_type'],
     'target_id' => $target['id'],
     'target_type' => $target['type'],
     'target_class' => $target['class'],
