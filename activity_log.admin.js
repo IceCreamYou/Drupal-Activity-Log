@@ -9,6 +9,7 @@ Drupal.behaviors.activityLogAdmin = function (context) {
       ctxt.find('#edit-settings-grouping-group-summary-wrapper').hide();
       ctxt.find('#edit-settings-grouping-collapse-method-wrapper').hide();
       ctxt.find('#edit-settings-grouping-group-template-wrapper').show();
+      ctxt.find('#edit-settings-grouping-translation-templates-fieldset').show();
       ctxt.find('#activity-log-admin-description').hide();
     }
     else if (val == 'action' || val == 'user_action') {
@@ -17,6 +18,7 @@ Drupal.behaviors.activityLogAdmin = function (context) {
       ctxt.find('#edit-settings-grouping-group-summary-wrapper').show();
       ctxt.find('#edit-settings-grouping-collapse-method-wrapper').show();
       ctxt.find('#edit-settings-grouping-group-template-wrapper').show();
+      ctxt.find('#edit-settings-grouping-translation-templates-fieldset').show();
       ctxt.find('#activity-log-admin-description').show();
     }
     else if (val == 'none') {
@@ -25,6 +27,7 @@ Drupal.behaviors.activityLogAdmin = function (context) {
       ctxt.find('#edit-settings-grouping-group-summary-wrapper').hide();
       ctxt.find('#edit-settings-grouping-collapse-method-wrapper').hide();
       ctxt.find('#edit-settings-grouping-group-template-wrapper').hide();
+      ctxt.find('#edit-settings-grouping-translation-templates-fieldset').hide();
     }
   };
   handle();

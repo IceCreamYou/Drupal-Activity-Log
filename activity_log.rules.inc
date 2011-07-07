@@ -13,6 +13,11 @@
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
+
+  // Get the language information.
+  $languages = array_keys(language_list());
+  $translate = count($languages) > 1;
+
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
   $settings += array(
     'public_name' => '',
@@ -96,7 +101,7 @@ function activity_log_log_action_form($settings, &$form) {
   );
   $form['settings']['grouping']['group_template'] = array(
     '#type' => 'textarea',
-    '#title' => t('Grouped message template'),
+    '#title' => $translate ? t('Grouped message template (default)') : t('Grouped message template'),
     '#description' => '<p>'. t('The format of the grouped message.') .' '.
       t('The token <em>[names]</em> will be replaced with the names of the users who took this action.') .' '.
       '<span id="activity-log-admin-description">'.
@@ -106,13 +111,52 @@ function activity_log_log_action_form($settings, &$form) {
     '#default_value' => $settings['grouping']['group_template'],
     '#rows' => 3,
   );
+  // Translation setup
+  if ($translate) {
+    $form['settings']['grouping']['translation_templates'] = array (
+      '#type' => 'fieldset',
+      '#title' => t('Grouped message translations'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#attributes' => array('id' => 'edit-settings-grouping-translation-templates-fieldset'),
+      '#description' => t('This is where you can override the group message template for each language the site supports. If you leave a field blank, the default will be used'),
+    );
+    foreach ($languages as $l) {
+      $form['settings']['grouping']['translation_templates'][$l] = array(
+        '#type' => 'textarea',
+        '#title' => t('Activity message') .' ('. $l .')',
+        '#default_value' => $settings['grouping']['translation_templates'][$l],
+        '#rows' => 3,
+        '#required' => FALSE,
+      );
+    }
+  }
   $form['settings']['template'] = array(
     '#type' => 'textarea',
-    '#title' => t('Activity message'),
+    '#title' => $translate ? t('Activity message (default)') : t('Activity message'),
     '#default_value' => $settings['template'],
     '#rows' => 3,
     '#required' => TRUE,
   );
+  // Translation setup
+  if ($translate) {
+    $form['settings']['translation_templates'] = array (
+      '#type' => 'fieldset',
+      '#title' => t('Message translations'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#description' => t('This is where you can override the message template for each language the site supports. If you leave a field blank, the default will be used'),
+    );
+    foreach ($languages as $l) {
+      $form['settings']['translation_templates'][$l] = array(
+        '#type' => 'textarea',
+        '#title' => t('Activity message') .' ('. $l .')',
+        '#default_value' => $settings['translation_templates'][$l],
+        '#rows' => 3,
+        '#required' => FALSE,
+      );
+    }
+  }
   $form['settings']['stream_owner'] = array(
     '#type' => 'textfield',
     '#title' => t('Stream owner'),
@@ -218,6 +262,15 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     ", $tid));
     $pid = $name->pid;
   }
+  // Gather the translation templates
+  if (count(language_list()) > 1) {
+    $translations = array(
+      'single' => $form_state['values']['settings']['translation_templates'],
+      'group' => $form_state['values']['settings']['grouping']['translation_templates'],
+    );
+  } else {
+    $translations = array();
+  }
   // If this is a new action or we changed the public name, check if the new name exists. If it doesn't, save the new value.
   if (empty($name) || $name->public_name != $form_state['values']['settings']['public_name']) {
     $pid = db_result(db_query("SELECT pid FROM {activity_log_action_names} WHERE public_name = '%s'", $form_state['values']['settings']['public_name']));
@@ -232,6 +285,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'template' => $form_state['values']['settings']['template'],
     'group_template' => $form_state['values']['settings']['grouping']['group_template'],
     'group_summary' => $form_state['values']['settings']['grouping']['group_summary'],
+    'translations' => serialize($translations),
     'collapse_method' => $form_state['values']['settings']['grouping']['collapse_method'],
     'stream_owner_id_template' => $form_state['values']['settings']['stream_owner'],
     'pid' => $pid,

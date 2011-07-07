@@ -43,6 +43,11 @@ function activity_log_schema() {
         'not null' => TRUE,
         'description' => 'The grouped message template.',
       ),
+      'translations' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'A serialized array containing translations for both the template and group_template field',
+      ),
       'group_summary' => array(
         'type' => 'text',
         'not null' => TRUE,
