@@ -290,28 +290,24 @@ function activity_log_load($mid) {
 function activity_log_evaluate_record($record) {
   $time = time();
   rules_include('rules');
+  $user_lang = user_preferred_language($GLOBALS['user'])->language;
+  $default_lang = language_default('language');
   // Get the stored data we need to apply the Rules input evaluators.
   $master_element = array('#settings' => array(
+    'placeholder' => '',
     'grouping' => array(
       'group_summary' => $record->group_summary,
+      'templates' => unserialize($record->group_template),
     ),
     'visibility' => array(
       'stream_owner_id' => '',
       'viewer_id' => '',
     ),
+    'templates' => unserialize($record->template),
     'acting_uid' => '',
     'tid' => $record->tid,
     '#eval input' => $record->eval_input,
   ));
-  // Use the template for the right language. (template, grouping|group_template)
-  $user_lang = user_preferred_language($GLOBALS['user'])->language;
-  $default_lang = language_default('language');
-  $lang_templates = unserialize($record->template);
-  $lang_group_templates = unserialize($record->group_template);
-  $master_element['#settings']['template'] =
-    empty($lang_templates[$user_lang]) ? $lang_templates[$default_lang] : $lang_templates[$user_lang]; // fall back to English
-  $master_element['#settings']['grouping']['group_template'] =
-    empty($lang_group_templates[$user_lang]) ? $lang_group_templates[$default_lang] : $lang_group_templates[$user_lang]; // fall back to English
   // Evaluate all of our grouped events.
   $template = '';
   $group_template = '';
@@ -327,8 +323,10 @@ function activity_log_evaluate_record($record) {
     // Apply the Rules input evaluators.
     rules_apply_input_evaluators($element, $state);
     // Keep track of the evaluated templates.
-    $template = $element['#settings']['template'];
-    $group_template = $element['#settings']['grouping']['group_template']; // same for every event
+    $templates = $element['#settings']['templates'];
+    $template = empty($templates[$user_lang]['template']) ? $templates[$default_lang]['template'] : $templates[$user_lang]['template'];
+    $group_templates = $element['#settings']['grouping']['templates'];
+    $group_template = empty($group_templates[$user_lang]['template']) ? $group_templates[$default_lang]['template'] : $group_templates[$user_lang]['template'];
     // Compute the group template variables.
     if (strpos($group_template, '[names]') !== FALSE) {
       $acting_user = activity_log_user_load($event->acting_uid);

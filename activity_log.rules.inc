@@ -18,15 +18,16 @@ function activity_log_log_action_form($settings, &$form) {
   $form['label']['#title'] = t('Administrative label');
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
   $settings += array(
+    'placeholder' => '',
     'public_name' => '',
-    'template' => '',
+    'templates' => array(),
     'grouping' => array(
       'group_method' => 'none',
       'group_interval' => 86400,
       'group_max' => 100,
       'group_summary' => '',
       'collapse_method' => 'activity_log_collection_inline',
-      'group_template' => '',
+      'templates' => array(),
     ),
     'visibility' => array(
       'stream_owner_entity_group' => array('custom' => 'custom'), // defaults to acting user, but acting_uid field is hidden
@@ -37,6 +38,10 @@ function activity_log_log_action_form($settings, &$form) {
     ),
     'acting_uid' => '',
   );
+  $form['settings']['placeholder'] = array(
+    '#type' => 'value',
+    '#value' => '',
+  );
   $form['settings']['public_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Public name of this activity type'),
@@ -45,10 +50,6 @@ function activity_log_log_action_form($settings, &$form) {
       t('This field does not accept tokens.'),
     '#default_value' => $settings['public_name'],
     '#autocomplete_path' => 'activity_log/autocomplete/public_name',
-  );
-  $form['settings']['template'] = array(
-    '#type' => 'value',
-    '#value' => '',
   );
   $form['settings']['templates'] = $translate ? array(
     '#type' => 'fieldset',
@@ -61,6 +62,9 @@ function activity_log_log_action_form($settings, &$form) {
     '#suffix' => '</div>',
   );
   foreach ($languages as $name => $lang) {
+    if (!isset($settings['templates'][$name])) {
+      $settings['templates'][$name] = array('template' => '');
+    }
     $is_default = language_default('language') == $name;
     $form['settings']['templates'][$name] = array(
       '#type' => 'fieldset',
@@ -132,10 +136,6 @@ function activity_log_log_action_form($settings, &$form) {
     '#default_value' => $settings['grouping']['collapse_method'],
     '#options' => $options,
   );
-  $form['settings']['grouping']['group_template'] = array(
-    '#type' => 'value',
-    '#value' => '',
-  );
   $form['settings']['grouping']['templates'] = $translate ? array(
     '#type' => 'fieldset',
     '#title' => t('Language templates'),
@@ -147,6 +147,9 @@ function activity_log_log_action_form($settings, &$form) {
     '#suffix' => '</div>',
   );
   foreach ($languages as $name => $lang) {
+    if (!isset($settings['grouping']['templates'][$name])) {
+      $settings['grouping']['templates'][$name] = array('template' => '');
+    }
     $is_default = language_default('language') == $name;
     $form['settings']['grouping']['templates'][$name] = array(
       '#type' => 'fieldset',
@@ -290,17 +293,17 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
         $group_templates = array();
         foreach ($form['settings']['templates'] as $lang => $info) {
           if (strpos($lang, '#') !== 0) {
-            $templates[$lang] = $info['template']['#default_value'];
-            $group_templates[$lang] = $form['settings']['grouping']['templates'][$lang]['template']['#default_value'];
+            $templates[$lang] = array('template' => $info['template']['#default_value']);
+            $group_templates[$lang] = array('template' => $form['settings']['grouping']['templates'][$lang]['template']['#default_value']);
           }
         }
         $form['#old_templates'] = serialize($templates);
         $form['#old_group_templates'] = serialize($templates);
       }
       array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_label_after');
-      // Undo the prefix to the template value that we added so the input evaluator knows this is the template.
-      if (isset($form['settings']['template']['#default_value'])) {
-        $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
+      // Undo the prefix we added so the input evaluator knows this is the placeholder.
+      if (isset($form['settings']['placeholder']['#value']) && strpos($form['settings']['placeholder']['#value'], ACTIVITY_LOG_DELIMITER) === 0) {
+        $form['settings']['placeholder']['#value'] = drupal_substr($form['settings']['placeholder']['#value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
       }
     }
     // Remove the help for our input evaluator (because it's internal, not user-facing).
@@ -322,15 +325,6 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
  */
 function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $v = $form_state['values']['settings'];
-  // Get the language templates.
-  $templates = array();
-  $group_templates = array();
-  foreach ($v['templates'] as $lang => $info) {
-    $templates[$lang] = $info['template'];
-    $group_templates[$lang] = $v['grouping']['templates'][$lang]['template'];
-  }
-  $templates = serialize($templates);
-  $group_templates = serialize($templates);
   // If we're updating, find the existing template and public name.
   $rule = $form_state['proxy']->_rule_name;
   $pid = 0;
@@ -362,8 +356,8 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   // Save the template.
   $record = (object) array(
     'rule' => $rule,
-    'template' => $templates,
-    'group_template' => $group_templates,
+    'template' => serialize($v['templates']),
+    'group_template' => serialize($v['grouping']['templates']),
     'group_summary' => $v['grouping']['group_summary'],
     'collapse_method' => $v['grouping']['collapse_method'],
     'pid' => $pid,
@@ -395,7 +389,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     ");
   }
   // Designate that the template should be processed later in activity_log_input_evaluator_process_apply().
-  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $v['template'];
+  $form_state['values']['settings']['placeholder'] = ACTIVITY_LOG_DELIMITER . $v['placeholder'];
 }
 
 /**
@@ -438,8 +432,8 @@ function activity_log_rules_admin_form_delete($form, $form_state) {
     $templates = array();
     $group_templates = array();
     foreach ($v['templates'] as $lang => $info) {
-      $templates[$lang] = $info['template'];
-      $group_templates[$lang] = $v['grouping']['templates'][$lang]['template'];
+      $templates[$lang] = array('template' => $info['template']);
+      $group_templates[$lang] = array('template' => $v['grouping']['templates'][$lang]['template']);
     }
     $templates = serialize($templates);
     $group_templates = serialize($templates);
@@ -573,11 +567,16 @@ function activity_log_input_evaluator_process_help($variables) {
  * Implementation of hook_rules_action_info().
  */
 function activity_log_rules_action_info() {
+  $eval_input = array('placeholder', 'grouping|group_summary', 'visibility|stream_owner_id', 'visibility|viewer_id', 'acting_uid');
+  foreach (language_list() as $name => $lang) {
+    $eval_input[] = 'templates|'. $name .'|template';
+    $eval_input[] = 'grouping|templates|'. $name .'|template';
+  }
   return array(
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Activity Log',
-      'eval input' => array('template', 'grouping|group_summary', 'grouping|group_template', 'visibility|stream_owner_id', 'visibility|viewer_id', 'acting_uid'),
+      'eval input' => $eval_input,
     ),
   );
 }
@@ -589,8 +588,8 @@ function activity_log_log_action($settings) {
   global $user;
   $time = time();
   // Get the value of the settings set via the UI.
-  $pos = strrpos($settings['template'], ACTIVITY_LOG_DELIMITER);
-  $map_serialized = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER));
+  $pos = strrpos($settings['placeholder'], ACTIVITY_LOG_DELIMITER);
+  $map_serialized = drupal_substr($settings['placeholder'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER));
   $map = unserialize($map_serialized);
   $target = reset($map); // returns the first element
   // Default empty fields to the current user.
@@ -663,7 +662,7 @@ function activity_log_log_action($settings) {
     foreach ($owners as $type => $ids) {
       $ids = array_unique($ids);
       $or[] = "(stream_owner_type = '%s' AND stream_owner_id IN (". db_placeholders($ids) ."))";
-      $args = array_merge($args, $ids);
+      $args = array_merge($args, array($type), $ids);
     }
     $where[] = "(". implode(" OR ", $or) .")";
     if ($group_method == 'target_action') {
