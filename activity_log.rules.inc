@@ -55,18 +55,22 @@ function activity_log_log_action_form($settings, &$form) {
     '#title' => t('Language templates'),
     '#description' => t('Set the localized templates for messages for this activity type.') .' '.
       t("If a language has no translation, it will fall back to the template for the site's default language."),
-  ) : array();
+    '#attributes' => array('id' => 'edit-settings-templates-fieldset'),
+  ) : array(
+    '#prefix' => '<div id="edit-settings-templates-fieldset">',
+    '#suffix' => '</div>',
+  );
   foreach ($languages as $name => $lang) {
     $is_default = language_default('language') == $name;
     $form['settings']['templates'][$name] = array(
       '#type' => 'fieldset',
-      '#title' => $lang['name'],
+      '#title' => $lang->name,
       '#collapsible' => !$is_default || $translate,
       '#collapsed' => !$is_default,
     );
     $form['settings']['templates'][$name]['template'] = array(
       '#type' => 'textarea',
-      '#title' => t('@lang activity message template', array('@lang' => $lang['name'])),
+      '#title' => t('@lang activity message template', array('@lang' => $lang->name)),
       '#default_value' => $settings['templates'][$name]['template'],
       '#rows' => 3,
       '#required' => $is_default,
@@ -137,18 +141,22 @@ function activity_log_log_action_form($settings, &$form) {
     '#title' => t('Language templates'),
     '#description' => t('Set the localized templates for grouped messages for this activity type.') .' '.
       t("If a language has no translation, it will fall back to the template for the site's default language."),
-  ) : array();
+    '#attributes' => array('id' => 'edit-settings-grouping-templates-fieldset'),
+  ) : array(
+    '#prefix' => '<div id="edit-settings-grouping-templates-fieldset">',
+    '#suffix' => '</div>',
+  );
   foreach ($languages as $name => $lang) {
     $is_default = language_default('language') == $name;
     $form['settings']['grouping']['templates'][$name] = array(
       '#type' => 'fieldset',
-      '#title' => $lang['name'],
+      '#title' => $lang->name,
       '#collapsible' => !$is_default || $translate,
       '#collapsed' => !$is_default,
     );
     $form['settings']['grouping']['templates'][$name]['template'] = array(
       '#type' => 'textarea',
-      '#title' => t('@lang grouped message template', array('@lang' => $lang['name'])),
+      '#title' => t('@lang grouped message template', array('@lang' => $lang->name)),
       '#default_value' => $settings['grouping']['templates'][$name]['template'],
       '#rows' => 3,
       '#description' => '<p>'. t('The format of the grouped message.') .' '.
