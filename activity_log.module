@@ -342,8 +342,8 @@ function activity_log_evaluate_record($record) {
   return str_replace(
     array('[names]', '[collection]'),
     array(
-      theme('activity_log_collapse', $names),
-      theme('activity_log_collapse', $collection, $record->collapse_method)
+      theme('activity_log_collapse', array_unique($names)),
+      theme('activity_log_collapse', array_unique($collection), $record->collapse_method)
     ),
     $group_template
   );
