@@ -289,8 +289,10 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
         $templates = array();
         $group_templates = array();
         foreach ($form['settings']['templates'] as $lang => $info) {
-          $templates[$lang] = $info['template']['#default_value'];
-          $group_templates[$lang] = $form['settings']['grouping']['templates'][$lang]['template']['#default_value'];
+          if (strpos($lang, '#') !== 0) {
+            $templates[$lang] = $info['template']['#default_value'];
+            $group_templates[$lang] = $form['settings']['grouping']['templates'][$lang]['template']['#default_value'];
+          }
         }
         $form['#old_templates'] = serialize($templates);
         $form['#old_group_templates'] = serialize($templates);
