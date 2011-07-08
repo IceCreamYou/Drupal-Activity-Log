@@ -13,9 +13,12 @@
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
+  $form['label']['#title'] = t('Administrative label');
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
   $settings += array(
     'public_name' => '',
+    'template' => '',
+    'acting_uid' => '',
     'grouping' => array(
       'group_method' => 'none',
       'group_interval' => 86400,
@@ -24,11 +27,11 @@ function activity_log_log_action_form($settings, &$form) {
       'collapse_method' => 'activity_log_collection_inline',
       'group_template' => '',
     ),
-    'template' => '',
-    'stream_owner_entity_group' => array(),
-    'stream_owner_id' => '',
-    'stream_owner_type' => 'user',
-    'acting_uid' => '',
+    'visibility' => array(
+      'stream_owner_entity_group' => array('custom' => 'custom'), // defaults to acting user, but acting_uid field is hidden
+      'stream_owner_id' => '',
+      'stream_owner_type' => 'user',
+    ),
   );
   $form['settings']['public_name'] = array(
     '#type' => 'textfield',
@@ -38,6 +41,19 @@ function activity_log_log_action_form($settings, &$form) {
       t('This field does not accept tokens.'),
     '#default_value' => $settings['public_name'],
     '#autocomplete_path' => 'activity_log/autocomplete/public_name',
+  );
+  $form['settings']['template'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Activity message template'),
+    '#default_value' => $settings['template'],
+    '#rows' => 3,
+    '#required' => TRUE,
+  );
+  $form['settings']['acting_uid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Acting user'),
+    '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user at the time the action occurred.'),
+    '#default_value' => $settings['acting_uid'],
   );
   $form['settings']['grouping'] = array(
     '#type' => 'fieldset',
@@ -107,13 +123,6 @@ function activity_log_log_action_form($settings, &$form) {
     '#default_value' => $settings['grouping']['group_template'],
     '#rows' => 3,
   );
-  $form['settings']['template'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Activity message'),
-    '#default_value' => $settings['template'],
-    '#rows' => 3,
-    '#required' => TRUE,
-  );
   $groups = module_invoke_all('activity_log_entity_groups');
   $options = array();
   $expose_fields = array();
@@ -125,33 +134,35 @@ function activity_log_log_action_form($settings, &$form) {
   }
   uasort($options, 'activity_log_element_sort');
   drupal_add_js(array('activity_log' => array('stream_owner_expose_fields' => $expose_fields)), 'setting');
-  $form['settings']['stream_owner_entity_group'] = array(
+  $form['settings']['visibility'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Visibility'),
+    '#description' => t('Configure where and to whom the message will appear.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['settings']['visibility']['stream_owner_entity_group'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Entities in whose stream activity records generated from this template should appear'),
     '#description' => t('Not all available options make sense for every activity type.') .' '.
       t('<strong>Warning:</strong> Choosing multiple streams can cause recording and retrieving activities to be slower on large sites.'),
     '#required' => TRUE,
-    '#default_value' => $settings['stream_owner_entity_group'],
+    '#default_value' => $settings['visibility']['stream_owner_entity_group'],
     '#options' => $options,
   );
-  $form['settings']['stream_owner_id'] = array(
+  $form['settings']['visibility']['stream_owner_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Custom stream owner ID'),
-    '#description' => t('Enter the ID of the entity in whose activity stream the activity records generated from this template should appear.'),
-    '#default_value' => $settings['stream_owner_id'],
+    '#description' => t('Enter the ID of the entity in whose activity stream the activity records generated from this template should appear.') .' '.
+      t('If not specified, defaults to the acting user.'),
+    '#default_value' => $settings['visibility']['stream_owner_id'],
   );
-  $form['settings']['stream_owner_type'] = array(
+  $form['settings']['visibility']['stream_owner_type'] = array(
     '#type' => 'select',
     '#title' => t('Custom stream owner type'),
     '#description' => t('The type of entity on whose stream the activity record will appear.'),
-    '#default_value' => $settings['stream_owner_type'],
+    '#default_value' => $settings['visibility']['stream_owner_type'],
     '#options' => activity_log_get_rules_data_types(),
-  );
-  $form['settings']['acting_uid'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Acting user'),
-    '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user.'),
-    '#default_value' => $settings['acting_uid'],
   );
 }
 
@@ -176,7 +187,6 @@ function activity_log_log_action_validate($form, $form_state) {
       }
     }
   }
-  // TODO: if a stream owner requires stream_owner_id or stream_owner_type, require that those fields have a value
 }
 
 /**
@@ -202,7 +212,6 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
       if (isset($form['settings']['template']['#default_value'])) {
         $form['settings']['template']['#default_value'] = drupal_substr($form['settings']['template']['#default_value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
       }
-      $form['#old_stream_owner_id'] = empty($form['settings']['stream_owner_id']['#default_value']) ? '' : $form['settings']['stream_owner_id']['#default_value'];
     }
     // Remove the help for our input evaluator (because it's internal, not user-facing).
     unset($form['input_help']['activity_log_input_evaluator_process']);
@@ -222,10 +231,11 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
  * before they get saved.
  */
 function activity_log_rules_admin_form_submit_before($form, &$form_state) {
+  $v = $form_state['values']['settings'];
   $rule = $form_state['proxy']->_rule_name;
   $tid = db_result(db_query("
-    SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
-  ", $rule, $form['#old_stream_owner_id']));
+    SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
+  ", $rule, $v['template'], $v['group_template']));
   $name = new stdClass();
   $pid = 0;
   if (!empty($tid)) {
@@ -239,21 +249,20 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     $pid = $name->pid;
   }
   // If this is a new action or we changed the public name, check if the new name exists. If it doesn't, save the new value.
-  if (empty($name) || $name->public_name != $form_state['values']['settings']['public_name']) {
-    $pid = db_result(db_query("SELECT pid FROM {activity_log_action_names} WHERE public_name = '%s'", $form_state['values']['settings']['public_name']));
-    if (empty($pid) && !empty($form_state['values']['settings']['public_name'])) {
-      $rec = (object) array('public_name' => $form_state['values']['settings']['public_name']);
+  if (empty($name) || $name->public_name != $v['public_name']) {
+    $pid = db_result(db_query("SELECT pid FROM {activity_log_action_names} WHERE public_name = '%s'", $v['public_name']));
+    if (empty($pid) && !empty($v['public_name'])) {
+      $rec = (object) array('public_name' => $v['public_name']);
       drupal_write_record('activity_log_action_names', $rec);
       $pid = $rec->pid;
     }
   }
   $record = (object) array(
     'rule' => $rule,
-    'template' => $form_state['values']['settings']['template'],
-    'group_template' => $form_state['values']['settings']['grouping']['group_template'],
-    'group_summary' => $form_state['values']['settings']['grouping']['group_summary'],
-    'collapse_method' => $form_state['values']['settings']['grouping']['collapse_method'],
-    'stream_owner_id_template' => $form_state['values']['settings']['stream_owner_id'],
+    'template' => $v['template'],
+    'group_template' => $v['grouping']['group_template'],
+    'group_summary' => $v['grouping']['group_summary'],
+    'collapse_method' => $v['grouping']['collapse_method'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
   );
@@ -283,7 +292,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     ");
   }
   // Designate that the template should be processed later in activity_log_input_evaluator_process_apply().
-  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $form_state['values']['settings']['template'];
+  $form_state['values']['settings']['template'] = ACTIVITY_LOG_DELIMITER . $v['template'];
 }
 
 /**
@@ -322,14 +331,14 @@ function activity_log_rules_admin_form_submit_label_after($form, $form_state) {
 function activity_log_rules_admin_form_delete($form, $form_state) {
   if (!empty($form['#parameters'][3])) {
     db_query("
-      DELETE FROM {activity_log_events} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s')
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner_id']);
+      DELETE FROM {activity_log_events} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s')
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['template'], $form['#parameters'][3]['#settings']['group_template']);
     db_query("
-      DELETE FROM {activity_log_messages} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s')
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner_id']);
+      DELETE FROM {activity_log_messages} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s')
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['template'], $form['#parameters'][3]['#settings']['group_template']);
     db_query("
-      DELETE FROM {activity_log_templates} WHERE rule = '%s' AND stream_owner_id_template = '%s'
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['stream_owner_id']);
+      DELETE FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
+    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['template'], $form['#parameters'][3]['#settings']['group_template']);
   }
 }
 
@@ -454,7 +463,7 @@ function activity_log_rules_action_info() {
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Activity Log',
-      'eval input' => array('grouping|group_summary', 'grouping|group_template', 'template', 'stream_owner_id', 'viewer_id', 'acting_uid'),
+      'eval input' => array('template', 'acting_uid', 'grouping|group_summary', 'grouping|group_template', 'visibility|stream_owner_id', 'visibility|viewer_id'),
     ),
   );
 }
@@ -463,6 +472,7 @@ function activity_log_rules_action_info() {
  * Log activity.
  */
 function activity_log_log_action($settings) {
+  global $user;
   $time = time();
   // Get the value of the settings set via the UI.
   $pos = strrpos($settings['template'], ACTIVITY_LOG_DELIMITER);
@@ -471,78 +481,125 @@ function activity_log_log_action($settings) {
   $map = unserialize($map_serialized);
   $target = reset($map); // returns the first element
   if (empty($settings['acting_uid'])) {
-    $settings['acting_uid'] = $GLOBALS['user']->uid;
+    $settings['acting_uid'] = $user->uid;
+  }
+  if (empty($settings['visibility']['stream_owner_id'])) {
+    $settings['visibility']['stream_owner_id'] = $user->uid;
+    $settings['visibility']['stream_owner_type'] = 'user';
   }
   // Store the event record.
-  $record = (object) array(
+  $event = (object) array(
     'tid' => $settings['tid'],
     'created' => $time,
     'acting_uid' => $settings['acting_uid'],
-    'stream_owner_id' => $settings['stream_owner_id'],
-    'stream_owner_type' => $settings['stream_owner_type'],
+    'stream_owner_id' => $settings['visibility']['stream_owner_id'],
+    'stream_owner_type' => $settings['visibility']['stream_owner_type'],
     'target_id' => $target['id'],
     'target_type' => $target['type'],
     'target_class' => $target['class'],
     'id_map' => $map_serialized,
   );
-  drupal_write_record('activity_log_events', $record);
+  drupal_write_record('activity_log_events', $event);
+  // Determine who the stream owners are.
+  $entity_groups = module_invoke_all('activity_log_entity_groups');
+  $owners = array();
+  foreach (array_filter($settings['visibility']['stream_owner_entity_group']) as $name) {
+    $group = $entity_groups[$name];
+    if (isset($group['file']) && file_exists($group['file'])) {
+      require_once $group['file'];
+    }
+    $args = array($event, $settings);
+    if (isset($group['expose fields'])) {
+      while ($item = array_shift($group['expose fields'])) {
+        if ($item == 'id') {
+          $args[] = $settings['visibility']['stream_owner_id'];
+        }
+        elseif ($item == 'type') {
+          $args[] = $settings['visibility']['stream_owner_type'];
+        }
+        elseif ($item == 'acting_uid') {
+          $args[] = $settings['acting_uid'];
+        }
+      }
+    }
+    if (isset($group['additional arguments'])) {
+      $args = array_merge($args, $group['additional arguments']);
+    }
+    $owners = array_merge_recursive($owners, call_user_func_array($group['items callback'], $args));
+  }
+  // Find similar events based on the grouping method.
   if ($settings['grouping']['group_method'] == 'target_action') {
-    $mid = db_result(db_query_range("
+    $result = db_query("
       SELECT mid
       FROM {activity_log_messages}
       WHERE
         tid = %d AND                 /* group by activity type */
-        stream_owner_id = %d AND     /* group by stream the message appears in */
-        stream_owner_type = '%s' AND
         target_id = %d AND           /* group by target entity */
         target_type = '%s'
       ORDER BY mid DESC
-    ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->target_id, $record->target_type, 0, 1));
+    ", $event->tid, $event->target_id, $event->target_type);
   }
   elseif ($settings['grouping']['group_method'] == 'action') {
-    $mid = db_result(db_query_range("
+    $result = db_query("
       SELECT mid
       FROM {activity_log_messages}
       WHERE
         tid = %d AND                 /* group by activity type */
-        stream_owner_id = %d AND     /* group by stream the message appears in */
-        stream_owner_type = '%s' AND
         created > %d AND             /* filter to groups that are new enough */
         LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
       ORDER BY mid DESC
-    ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
+    ", $event->tid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max']);
   }
   elseif ($settings['grouping']['group_method'] == 'user_action') {
-    $mid = db_result(db_query_range("
+    $result = db_query("
       SELECT mid
       FROM {activity_log_messages}
       WHERE
         tid = %d AND                 /* group by activity type */
-        stream_owner_id = %d AND     /* group by stream the message appears in */
-        stream_owner_type = '%s' AND
         acting_uid = %d AND          /* filter by action user */
         created > %d AND             /* filter to groups that are new enough */
         LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
       ORDER BY mid DESC
-    ", $record->tid, $record->stream_owner_id, $record->stream_owner_type, $record->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max'], 0, 1));
+    ", $event->tid, $event->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max']);
   }
-  if (!empty($mid)) {
-    db_query("UPDATE {activity_log_messages} SET aids = CONCAT(aids, %d, ','), last_updated = %d WHERE mid = %d", $record->aid, $record->created, $mid);
-    $group = db_fetch_object(db_query("SELECT * FROM {activity_log_messages} WHERE mid = %d", $mid));
+  // If we found similar events, group with them. If not, save new messages.
+  $messages = array();
+  if (!empty($result)) {
+    $mids = array();
+    while ($message = db_fetch_object($result)) {
+      $mids[] = $message->mid;
+    }
+    if (!empty($mids)) {
+      db_query("
+        UPDATE {activity_log_messages}
+        SET aids = CONCAT(aids, %d, ','), last_updated = %d
+        WHERE mid IN (". db_placeholders($mids) .")"
+      , array_merge(array($event->aid, $event->created), $mids));
+      $result = db_query("SELECT * FROM {activity_log_messages} WHERE mid IN (". db_placeholders($mids) .")", $mids);
+      while ($message = db_fetch_object($result)) {
+        $messages[] = $message;
+      }
+    }
   }
-  else {
-    $group = (object) array(
-      'tid' => $record->tid,
-      'aids' => ','. $record->aid .',',
-      'created' => $record->created,
-      'last_updated' => $record->created,
-      'stream_owner_id' => $record->stream_owner_id,
-      'stream_owner_type' => $record->stream_owner_type,
-      'target_id' => $record->target_id,
-      'target_type' => $record->target_type,
-      'acting_uid' => $record->acting_uid,
-    );
-    drupal_write_record('activity_log_messages', $group);
+  if (empty($messages)) {
+    foreach ($owners as $type => $ids) {
+      foreach (array_unique($ids) as $id) {
+        $message = (object) array(
+          'tid' => $event->tid,
+          'aids' => ','. $event->aid .',',
+          'created' => $event->created,
+          'last_updated' => $event->created,
+          'stream_owner_id' => $id,
+          'stream_owner_type' => $type,
+          'target_id' => $event->target_id,
+          'target_type' => $event->target_type,
+          'acting_uid' => $event->acting_uid,
+        );
+        drupal_write_record('activity_log_messages', $message);
+        $messages[] = $message;
+      }
+    }
   }
-  module_invoke_all('activity_log_event', $record, $group, $settings);
+  // Invokes hook_activity_log_event($event, $messages, $settings).
+  module_invoke_all('activity_log_event', $event, $messages, $settings);
 }

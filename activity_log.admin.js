@@ -3,8 +3,9 @@ Drupal.behaviors.activityLogAdmin = function (context) {
   var ctxt = $(context);
 
   // Show/hide grouping settings.
-  var handle = function() {
-    var val = ctxt.find('input:radio[name="settings[grouping][group_method]"]:checked').val();
+  var $group_method = ctxt.find('input:radio[name="settings[grouping][group_method]"]:checked');
+  var handle_gm = function() {
+    var val = $group_method.val();
     if (val == 'target_action') {
       ctxt.find('#edit-settings-grouping-group-interval-wrapper').hide();
       ctxt.find('#edit-settings-grouping-group-max-wrapper').hide();
@@ -29,32 +30,48 @@ Drupal.behaviors.activityLogAdmin = function (context) {
       ctxt.find('#edit-settings-grouping-group-template-wrapper').hide();
     }
   };
-  handle();
-  ctxt.find('input:radio[name="settings[grouping][group_method]"]').change(handle);
+  handle_gm();
+  ctxt.find('input:radio[name="settings[grouping][group_method]"]').change(handle_gm);
 
   // Show/hide stream owner exposed fields.
-  ctxt.find('#edit-settings-stream-owner-id-wrapper').hide();
-  ctxt.find('#edit-settings-stream-owner-type-wrapper').hide();
   var fields = Drupal.settings.activity_log.stream_owner_expose_fields;
-  $.each(fields, function(key, value) {
-    ctxt.find('input:checkbox[name="settings[stream_owner_entity_group]['+ key +']"]').change(function() {
-      var shown = new Array();
-      $.each(fields, function(k, v) {
-        for (var val in v) {
-          if ($('input:checkbox[name="settings[stream_owner_entity_group]['+ k +']"]').attr('checked')) {
-            if ($.inArray(v[val], shown) == -1) {
-              $('#edit-settings-stream-owner-'+ v[val] +'-wrapper').show();
-              shown[v[val]] = v[val];
+  var handle_so = function() {
+    var shown = new Array();
+    $.each(fields, function(k, v) {
+      for (var val in v) {
+        if (ctxt.find('input:checkbox[name="settings[visibility][stream_owner_entity_group]['+ k +']"]').attr('checked')) {
+          if ($.inArray(v[val], shown) == -1) {
+            var type = 'acting-uid';
+            if (v[val] == 'id') {
+              type = 'visibility-stream-owner-id';
             }
+            else if (v[val] == 'type') {
+              type = 'visibility-stream-owner-type';
+            }
+            ctxt.find('#edit-settings-'+ type +'-wrapper').show();
+            shown[v[val]] = v[val];
           }
-        }
-      });
-      var f = ['id', 'type'];
-      for (var val in f) {
-        if (shown[f[val]] == undefined || shown[f[val]] == null) {
-          $('#edit-settings-stream-owner-'+ f[val] +'-wrapper').hide();
         }
       }
     });
+    var f = ['id', 'type', 'acting_uid'];
+    for (var val in f) {
+      if (shown[f[val]] == undefined || shown[f[val]] == null) {
+        var type = 'acting-uid';
+        if (f[val] == 'id') {
+          type = 'visibility-stream-owner-id';
+        }
+        else if (f[val] == 'type') {
+          type = 'visibility-stream-owner-type';
+        }
+        if (f[val] != 'acting_uid' || $group_method.val() != 'user_action') {
+          ctxt.find('#edit-settings-'+ type +'-wrapper').hide();
+        }
+      }
+    }
+  };
+  handle_so();
+  $.each(fields, function(key, value) {
+    ctxt.find('input:checkbox[name="settings[visibility][stream_owner_entity_group]['+ key +']"]').change(handle_so);
   });
 }

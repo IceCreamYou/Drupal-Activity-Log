@@ -27,7 +27,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     'acting user' => array(
       'items callback' => 'activity_log_eg_acting_user',
       'title' => t('Acting user'),
-      //'expose fields' => array('acting_uid'),
+      'expose fields' => array('acting_uid'),
     ),
     'target entity' => array(
       'items callback' => 'activity_log_eg_target_entity',
@@ -49,7 +49,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['acting user relationships'] = array(
       'items callback' => 'activity_log_eg_acting_user_rels',
       'title' => t("The acting user's relationships"),
-      //'expose fields' => array('acting_uid'),
+      'expose fields' => array('acting_uid'),
     );
     $groups['custom user relationships'] = array(
       'items callback' => 'activity_log_eg_custom_user_rels',
@@ -61,7 +61,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       $groups['acting user relationships '. $type->rtid] = array(
         'items callback' => 'activity_log_eg_acting_user_rels_type',
         'title' => t("The acting user's %type relationships", array('%type' => $type->name)),
-        //'expose fields' => array('acting_uid'),
+        'expose fields' => array('acting_uid'),
         'additional arguments' => array($type),
       );
       $groups['custom user relationships '. $type->rtid] = array(
@@ -76,7 +76,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['active groups relationships acting user'] = array(
       'items callback' => 'activity_log_eg_active_groups_rels_acting_user',
       'title' => t('Members of active groups who have a relationship with the acting user'),
-      //'expose fields' => array('acting_uid'),
+      'expose fields' => array('acting_uid'),
     );
     $groups['active groups relationships custom user'] = array(
       'items callback' => 'activity_log_eg_active_groups_rels_custom_user',
@@ -87,7 +87,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       $groups['active groups relationships '. $type->rtid .' acting user'] = array(
         'items callback' => 'activity_log_eg_active_groups_rels_type_acting_user',
         'title' => t('Members of active groups who have a %type relationship with the acting user', array('%type' => $type->name)),
-        //'expose fields' => array('acting_uid'),
+        'expose fields' => array('acting_uid'),
         'additional arguments' => array($type),
       );
       $groups['active groups relationships '. $type->rtid .' custom user'] = array(
@@ -200,7 +200,7 @@ function activity_log_eg_custom_user_rels($event, $settings, $id) {
 /**
  * Returns the entitity IDs for the Acting user's %type relationships group.
  */
-function activity_log_eg_acting_user_rels_type($event, $settings, $ur_type, $acting_uid) {
+function activity_log_eg_acting_user_rels_type($event, $settings, $acting_uid, $ur_type) {
   if (module_exists('user_relationships_api')) {
     return array('user' => _activity_log_get_user_relationships($acting_uid, $ur_type->rtid));
   }
@@ -209,7 +209,7 @@ function activity_log_eg_acting_user_rels_type($event, $settings, $ur_type, $act
 /**
  * Returns the entitity IDs for the Custom user's %type relationships group.
  */
-function activity_log_eg_custom_user_rels_type($event, $settings, $ur_type, $id) {
+function activity_log_eg_custom_user_rels_type($event, $settings, $id, $ur_type) {
   if (module_exists('user_relationships_api')) {
     return array('user' => _activity_log_get_user_relationships($id, $ur_type->rtid));
   }
@@ -243,7 +243,7 @@ function activity_log_eg_active_groups_rels_custom_user($event, $settings, $id) 
  * Returns the entitity IDs for the members of the active groups who have a
  * %type relationship with the acting user.
  */
-function activity_log_eg_active_groups_rels_type_acting_user($event, $settings, $ur_type, $acting_uid) {
+function activity_log_eg_active_groups_rels_type_acting_user($event, $settings, $acting_uid, $ur_type) {
   if (module_exists('user_relationships_api') && module_exists('og')) {
     $members = _activity_log_get_active_group_members();
     $rels = _activity_log_get_user_relationships($acting_uid, $ur_type->rtid);
@@ -255,7 +255,7 @@ function activity_log_eg_active_groups_rels_type_acting_user($event, $settings, 
  * Returns the entitity IDs for the members of the active groups who have a
  * %type relationship with a custom user.
  */
-function activity_log_eg_active_groups_rels_type_custom_user($event, $settings, $ur_type, $id) {
+function activity_log_eg_active_groups_rels_type_custom_user($event, $settings, $id, $ur_type) {
   if (module_exists('user_relationships_api') && module_exists('og')) {
     $members = _activity_log_get_active_group_members();
     $rels = _activity_log_get_user_relationships($id, $ur_type->rtid);
