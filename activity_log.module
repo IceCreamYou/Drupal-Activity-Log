@@ -294,9 +294,7 @@ function activity_log_evaluate_record($record) {
   $master_element = array('#settings' => array(
     'grouping' => array(
       'group_summary' => $record->group_summary,
-      'group_template' => $record->group_template,
     ),
-    'template' => $record->template,
     'visibility' => array(
       'stream_owner_id' => '',
       'viewer_id' => '',
@@ -305,6 +303,15 @@ function activity_log_evaluate_record($record) {
     'tid' => $record->tid,
     '#eval input' => $record->eval_input,
   ));
+  // Use the template for the right language. (template, grouping|group_template)
+  $user_lang = user_preferred_language($GLOBALS['user'])->language;
+  $default_lang = language_default('language');
+  $lang_templates = unserialize($record->template);
+  $lang_group_templates = unserialize($record->group_template);
+  $master_element['#settings']['template'] =
+    empty($lang_templates[$user_lang]) ? $lang_templates[$default_lang] : $lang_templates[$user_lang]; // fall back to English
+  $master_element['#settings']['grouping']['group_template'] =
+    empty($lang_group_templates[$user_lang]) ? $lang_group_templates[$default_lang] : $lang_group_templates[$user_lang]; // fall back to English
   // Evaluate all of our grouped events.
   $template = '';
   $group_template = '';

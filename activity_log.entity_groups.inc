@@ -23,26 +23,31 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       'items callback' => 'activity_log_eg_custom',
       'title' => t('Custom'),
       'expose fields' => array('id', 'type'),
+      'weight' => -100,
     ),
     'acting user' => array(
       'items callback' => 'activity_log_eg_acting_user',
       'title' => t('Acting user'),
       'expose fields' => array('acting_uid'),
+      'weight' => -95,
     ),
     'target entity' => array(
       'items callback' => 'activity_log_eg_target_entity',
       'title' => t('The entity on which the action was performed'),
       'additional arguments' => array($stream_owner),
+      'weight' => -90,
     ),
   );
   if ($og) {
     $groups['active groups'] = array(
       'items callback' => 'activity_log_eg_active_groups',
       'title' => t('Active groups'),
+      'weight' => -85,
     );
     $groups['active groups members'] = array(
       'items callback' => 'activity_log_eg_active_groups_members',
       'title' => t('Active group members'),
+      'weight' => -80,
     );
   }
   if ($ur) {
@@ -50,11 +55,13 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       'items callback' => 'activity_log_eg_acting_user_rels',
       'title' => t("The acting user's relationships"),
       'expose fields' => array('acting_uid'),
+      'weight' => -75,
     );
     $groups['custom user relationships'] = array(
       'items callback' => 'activity_log_eg_custom_user_rels',
       'title' => t("A custom user's relationships"),
       'expose fields' => array('id'),
+      'weight' => -70,
     );
     $ur_types = user_relationships_types_load();
     foreach ($ur_types as $type) {
@@ -63,12 +70,14 @@ function activity_log_entity_groups($stream_owner = TRUE) {
         'title' => t("The acting user's %type relationships", array('%type' => $type->name)),
         'expose fields' => array('acting_uid'),
         'additional arguments' => array($type),
+        'weight' => -65,
       );
       $groups['custom user relationships '. $type->rtid] = array(
         'items callback' => 'activity_log_eg_custom_user_rels_type',
         'title' => t("A custom user's %type relationships", array('%type' => $type->name)),
         'expose fields' => array('id'),
         'additional arguments' => array($type),
+        'weight' => -60,
       );
     }
   }
@@ -77,11 +86,13 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       'items callback' => 'activity_log_eg_active_groups_rels_acting_user',
       'title' => t('Members of active groups who have a relationship with the acting user'),
       'expose fields' => array('acting_uid'),
+      'weight' => -55,
     );
     $groups['active groups relationships custom user'] = array(
       'items callback' => 'activity_log_eg_active_groups_rels_custom_user',
       'title' => t('Members of active groups who have a relationship with a custom user'),
       'expose fields' => array('id'),
+      'weight' => -50,
     );
     foreach ($ur_types as $type) {
       $groups['active groups relationships '. $type->rtid .' acting user'] = array(
@@ -89,12 +100,14 @@ function activity_log_entity_groups($stream_owner = TRUE) {
         'title' => t('Members of active groups who have a %type relationship with the acting user', array('%type' => $type->name)),
         'expose fields' => array('acting_uid'),
         'additional arguments' => array($type),
+        'weight' => -45,
       );
       $groups['active groups relationships '. $type->rtid .' custom user'] = array(
         'items callback' => 'activity_log_eg_active_groups_rels_type_custom_user',
         'title' => t('Members of active groups who have a %type relationship with a custom user', array('%type' => $type->name)),
         'expose fields' => array('id'),
         'additional arguments' => array($type),
+        'weight' => -40,
       );
     }
   }
@@ -102,36 +115,42 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['node commenters'] = array(
       'items callback' => 'activity_log_eg_node_commenters',
       'title' => t('Other people who have commented on this node (including the node author)'),
-    );
-  }
-  if ($fc) {
-    $groups['status commenters'] = array(
-      'items callback' => 'activity_log_eg_status_commenters',
-      'title' => t('Other people who have commented on this status (including the sender and recipient)'),
-    );
-  }
-  if ($ft) {
-    $groups['mentioned users'] = array(
-      'items callback' => 'activity_log_eg_mentioned_users',
-      'title' => t('The users @mentioned in a status'),
-    );
-    $groups['hashtag terms'] = array(
-      'items callback' => 'activity_log_eg_hashtag_terms',
-      'title' => t('The taxonomy terms corresponding to the #hashtags in a status'),
+      'weight' => -35,
     );
   }
   if ($tx) {
     $groups['node terms'] = array(
       'items callback' => 'activity_log_eg_node_terms',
       'title' => t('The taxonomy terms used in a node'),
+      'weight' => -30,
+    );
+  }
+  if ($fc) {
+    $groups['status commenters'] = array(
+      'items callback' => 'activity_log_eg_status_commenters',
+      'title' => t('Other people who have commented on this status (including the sender and recipient)'),
+      'weight' => -25,
+    );
+  }
+  if ($ft) {
+    $groups['mentioned users'] = array(
+      'items callback' => 'activity_log_eg_mentioned_users',
+      'title' => t('The users @mentioned in a status'),
+      'weight' => -20,
+    );
+    $groups['hashtag terms'] = array(
+      'items callback' => 'activity_log_eg_hashtag_terms',
+      'title' => t('The taxonomy terms corresponding to the #hashtags in a status'),
+      'weight' => -15,
     );
   }
   if (!$stream_owner) {
-    unset($groups['active groups'], $groups['hashtag terms'], $groups['node terms']);
+    unset($groups['active groups'], $groups['hashtag terms'], $groups['node terms'], $groups['custom']['expose fields'][1]);
     $groups['target entity']['title'] = t('The user on which the action was performed, if applicable');
     $groups['everyone'] = array(
       'items callback' => 'activity_log_eg_everyone',
       'title' => t('Everyone'),
+      'weight' => -105,
     );
   }
   return $groups;
@@ -140,7 +159,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
 /**
  * Returns the entitity IDs for the Custom group.
  */
-function activity_log_eg_custom($event, $settings, $id, $type) {
+function activity_log_eg_custom($event, $settings, $id, $type = 'user') {
   return array($type => array($id));
 }
 

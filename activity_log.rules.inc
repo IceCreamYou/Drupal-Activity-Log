@@ -13,12 +13,13 @@
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
+  $languages = language_list();
+  $translate = count($languages) > 1;
   $form['label']['#title'] = t('Administrative label');
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
   $settings += array(
     'public_name' => '',
     'template' => '',
-    'acting_uid' => '',
     'grouping' => array(
       'group_method' => 'none',
       'group_interval' => 86400,
@@ -31,7 +32,10 @@ function activity_log_log_action_form($settings, &$form) {
       'stream_owner_entity_group' => array('custom' => 'custom'), // defaults to acting user, but acting_uid field is hidden
       'stream_owner_id' => '',
       'stream_owner_type' => 'user',
+      'viewer_entity_group' => array('everyone' => 'everyone'),
+      'viewer_id' => '',
     ),
+    'acting_uid' => '',
   );
   $form['settings']['public_name'] = array(
     '#type' => 'textfield',
@@ -43,18 +47,31 @@ function activity_log_log_action_form($settings, &$form) {
     '#autocomplete_path' => 'activity_log/autocomplete/public_name',
   );
   $form['settings']['template'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Activity message template'),
-    '#default_value' => $settings['template'],
-    '#rows' => 3,
-    '#required' => TRUE,
+    '#type' => 'value',
+    '#value' => '',
   );
-  $form['settings']['acting_uid'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Acting user'),
-    '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user at the time the action occurred.'),
-    '#default_value' => $settings['acting_uid'],
-  );
+  $form['settings']['templates'] = $translate ? array(
+    '#type' => 'fieldset',
+    '#title' => t('Language templates'),
+    '#description' => t('Set the localized templates for messages for this activity type.') .' '.
+      t("If a language has no translation, it will fall back to the template for the site's default language."),
+  ) : array();
+  foreach ($languages as $name => $lang) {
+    $is_default = language_default('language') == $name;
+    $form['settings']['templates'][$name] = array(
+      '#type' => 'fieldset',
+      '#title' => $lang['name'],
+      '#collapsible' => !$is_default || $translate,
+      '#collapsed' => !$is_default,
+    );
+    $form['settings']['templates'][$name]['template'] = array(
+      '#type' => 'textarea',
+      '#title' => t('@lang activity message template', array('@lang' => $lang['name'])),
+      '#default_value' => $settings['templates'][$name]['template'],
+      '#rows' => 3,
+      '#required' => $is_default,
+    );
+  }
   $form['settings']['grouping'] = array(
     '#type' => 'fieldset',
     '#title' => t('Group similar messages'),
@@ -112,17 +129,36 @@ function activity_log_log_action_form($settings, &$form) {
     '#options' => $options,
   );
   $form['settings']['grouping']['group_template'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Grouped message template'),
-    '#description' => '<p>'. t('The format of the grouped message.') .' '.
-      t('The token <em>[names]</em> will be replaced with the names of the users who took this action.') .' '.
-      '<span id="activity-log-admin-description">'.
-        t('Additionally, the token <em>[collection]</em> will be replaced with summaries of the target objects formatted according to the "Grouped item name" setting above.')
-      .'</span> '.
-      t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .'</p>',
-    '#default_value' => $settings['grouping']['group_template'],
-    '#rows' => 3,
+    '#type' => 'value',
+    '#value' => '',
   );
+  $form['settings']['grouping']['templates'] = $translate ? array(
+    '#type' => 'fieldset',
+    '#title' => t('Language templates'),
+    '#description' => t('Set the localized templates for grouped messages for this activity type.') .' '.
+      t("If a language has no translation, it will fall back to the template for the site's default language."),
+  ) : array();
+  foreach ($languages as $name => $lang) {
+    $is_default = language_default('language') == $name;
+    $form['settings']['grouping']['templates'][$name] = array(
+      '#type' => 'fieldset',
+      '#title' => $lang['name'],
+      '#collapsible' => !$is_default || $translate,
+      '#collapsed' => !$is_default,
+    );
+    $form['settings']['grouping']['templates'][$name]['template'] = array(
+      '#type' => 'textarea',
+      '#title' => t('@lang grouped message template', array('@lang' => $lang['name'])),
+      '#default_value' => $settings['grouping']['templates'][$name]['template'],
+      '#rows' => 3,
+      '#description' => '<p>'. t('The format of the grouped message.') .' '.
+        t('The token <em>[names]</em> will be replaced with the names of the users who took this action.') .' '.
+        '<span class="activity-log-admin-description">'.
+          t('Additionally, the token <em>[collection]</em> will be replaced with summaries of the target objects formatted according to the "Grouped item name" setting above.')
+        .'</span> '.
+        t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .'</p>',
+    );
+  }
   $groups = module_invoke_all('activity_log_entity_groups');
   $options = array();
   $expose_fields = array();
@@ -163,6 +199,39 @@ function activity_log_log_action_form($settings, &$form) {
     '#description' => t('The type of entity on whose stream the activity record will appear.'),
     '#default_value' => $settings['visibility']['stream_owner_type'],
     '#options' => activity_log_get_rules_data_types(),
+  );
+  $groups = module_invoke_all('activity_log_entity_groups', FALSE);
+  $options = array();
+  $expose_fields = array();
+  foreach ($groups as $name => $group) {
+    $options[$name] = $group['title'];
+    if (!empty($group['expose fields'])) {
+      $expose_fields[$name] = $group['expose fields'];
+    }
+  }
+  uasort($options, 'activity_log_element_sort');
+  drupal_add_js(array('activity_log' => array('viewer_expose_fields' => $expose_fields)), 'setting');
+  $form['settings']['visibility']['viewer_entity_group'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('The users who will be able to see this message'),
+    '#description' => t('Not all available options make sense for every activity type.') .' '.
+      t('<strong>Warning:</strong> Choosing multiple user groups can cause recording and retrieving activities to be slower on large sites.'),
+    '#required' => TRUE,
+    '#default_value' => $settings['visibility']['viewer_entity_group'],
+    '#options' => $options,
+  );
+  $form['settings']['visibility']['viewer_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Custom viewing user ID'),
+    '#description' => t('Enter the ID of the user who should be able to see this message.') .' '.
+      t('If not specified, defaults to the acting user.'),
+    '#default_value' => $settings['visibility']['viewer_id'],
+  );
+  $form['settings']['acting_uid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Acting user'),
+    '#description' => t('Enter the ID of the user taking the action. If not specified, defaults to the current user at the time the action occurred.'),
+    '#default_value' => $settings['acting_uid'],
   );
 }
 
@@ -207,6 +276,17 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
       if ($form_id == 'rules_admin_form_add') {
         array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_eval_after');
       }
+      else {
+        // Get the language templates.
+        $templates = array();
+        $group_templates = array();
+        foreach ($form['settings']['templates'] as $lang => $info) {
+          $templates[$lang] = $info['template']['#default_value'];
+          $group_templates[$lang] = $form['settings']['grouping']['templates'][$lang]['template']['#default_value'];
+        }
+        $form['#old_templates'] = serialize($templates);
+        $form['#old_group_templates'] = serialize($templates);
+      }
       array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_label_after');
       // Undo the prefix to the template value that we added so the input evaluator knows this is the template.
       if (isset($form['settings']['template']['#default_value'])) {
@@ -232,21 +312,33 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
  */
 function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $v = $form_state['values']['settings'];
+  // Get the language templates.
+  $templates = array();
+  $group_templates = array();
+  foreach ($v['templates'] as $lang => $info) {
+    $templates[$lang] = $info['template'];
+    $group_templates[$lang] = $v['grouping']['templates'][$lang]['template'];
+  }
+  $templates = serialize($templates);
+  $group_templates = serialize($templates);
+  // If we're updating, find the existing template and public name.
   $rule = $form_state['proxy']->_rule_name;
-  $tid = db_result(db_query("
-    SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
-  ", $rule, $v['template'], $v['group_template']));
-  $name = new stdClass();
   $pid = 0;
-  if (!empty($tid)) {
-    $name = db_fetch_object(db_query("
-      SELECT n.*
-      FROM {activity_log_templates} t
-      LEFT JOIN {activity_log_action_names} n
-        ON t.pid = n.pid
-      WHERE tid = %d
-    ", $tid));
-    $pid = $name->pid;
+  $name = new stdClass();
+  if (!empty($form['#old_templates'])) {
+    $tid = db_result(db_query("
+      SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
+    ", $rule, $form['#old_templates'], $form['#old_group_templates']));
+    if (!empty($tid)) {
+      $name = db_fetch_object(db_query("
+        SELECT n.*
+        FROM {activity_log_templates} t
+        LEFT JOIN {activity_log_action_names} n
+          ON t.pid = n.pid
+        WHERE tid = %d
+      ", $tid));
+      $pid = $name->pid;
+    }
   }
   // If this is a new action or we changed the public name, check if the new name exists. If it doesn't, save the new value.
   if (empty($name) || $name->public_name != $v['public_name']) {
@@ -257,10 +349,11 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
       $pid = $rec->pid;
     }
   }
+  // Save the template.
   $record = (object) array(
     'rule' => $rule,
-    'template' => $v['template'],
-    'group_template' => $v['grouping']['group_template'],
+    'template' => $templates,
+    'group_template' => $group_templates,
     'group_summary' => $v['grouping']['group_summary'],
     'collapse_method' => $v['grouping']['collapse_method'],
     'pid' => $pid,
@@ -330,15 +423,26 @@ function activity_log_rules_admin_form_submit_label_after($form, $form_state) {
  */
 function activity_log_rules_admin_form_delete($form, $form_state) {
   if (!empty($form['#parameters'][3])) {
+    $v = $form['#parameters'][3]['#settings'];
+    // Get the language templates.
+    $templates = array();
+    $group_templates = array();
+    foreach ($v['templates'] as $lang => $info) {
+      $templates[$lang] = $info['template'];
+      $group_templates[$lang] = $v['grouping']['templates'][$lang]['template'];
+    }
+    $templates = serialize($templates);
+    $group_templates = serialize($templates);
+    $rule = $form_state['proxy']->_rule_name;
     db_query("
       DELETE FROM {activity_log_events} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s')
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['template'], $form['#parameters'][3]['#settings']['group_template']);
+    ", $rule, $templates, $group_templates);
     db_query("
       DELETE FROM {activity_log_messages} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s')
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['template'], $form['#parameters'][3]['#settings']['group_template']);
+    ", $rule, $templates, $group_templates);
     db_query("
       DELETE FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
-    ", $form_state['proxy']->_rule_name, $form['#parameters'][3]['#settings']['template'], $form['#parameters'][3]['#settings']['group_template']);
+    ", $rule, $templates, $group_templates);
   }
 }
 
@@ -463,7 +567,7 @@ function activity_log_rules_action_info() {
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
       'module' => 'Activity Log',
-      'eval input' => array('template', 'acting_uid', 'grouping|group_summary', 'grouping|group_template', 'visibility|stream_owner_id', 'visibility|viewer_id'),
+      'eval input' => array('template', 'grouping|group_summary', 'grouping|group_template', 'visibility|stream_owner_id', 'visibility|viewer_id', 'acting_uid'),
     ),
   );
 }
@@ -476,10 +580,10 @@ function activity_log_log_action($settings) {
   $time = time();
   // Get the value of the settings set via the UI.
   $pos = strrpos($settings['template'], ACTIVITY_LOG_DELIMITER);
-  $message = drupal_substr($settings['template'], 0, $pos);
   $map_serialized = drupal_substr($settings['template'], $pos + drupal_strlen(ACTIVITY_LOG_DELIMITER));
   $map = unserialize($map_serialized);
   $target = reset($map); // returns the first element
+  // Default empty fields to the current user.
   if (empty($settings['acting_uid'])) {
     $settings['acting_uid'] = $user->uid;
   }
@@ -487,116 +591,126 @@ function activity_log_log_action($settings) {
     $settings['visibility']['stream_owner_id'] = $user->uid;
     $settings['visibility']['stream_owner_type'] = 'user';
   }
+  if (empty($settings['visibility']['viewer_id'])) {
+    $settings['visibility']['viewer_id'] = $user->uid;
+  }
   // Store the event record.
   $event = (object) array(
     'tid' => $settings['tid'],
     'created' => $time,
     'acting_uid' => $settings['acting_uid'],
-    'stream_owner_id' => $settings['visibility']['stream_owner_id'],
-    'stream_owner_type' => $settings['visibility']['stream_owner_type'],
     'target_id' => $target['id'],
     'target_type' => $target['type'],
     'target_class' => $target['class'],
     'id_map' => $map_serialized,
   );
   drupal_write_record('activity_log_events', $event);
-  // Determine who the stream owners are.
-  $entity_groups = module_invoke_all('activity_log_entity_groups');
-  $owners = array();
-  foreach (array_filter($settings['visibility']['stream_owner_entity_group']) as $name) {
-    $group = $entity_groups[$name];
-    if (isset($group['file']) && file_exists($group['file'])) {
-      require_once $group['file'];
-    }
-    $args = array($event, $settings);
-    if (isset($group['expose fields'])) {
-      while ($item = array_shift($group['expose fields'])) {
-        if ($item == 'id') {
-          $args[] = $settings['visibility']['stream_owner_id'];
-        }
-        elseif ($item == 'type') {
-          $args[] = $settings['visibility']['stream_owner_type'];
-        }
-        elseif ($item == 'acting_uid') {
-          $args[] = $settings['acting_uid'];
+  // Determine who the stream owners and viewers are.
+  $stream_owner_entity_groups = module_invoke_all('activity_log_entity_groups');
+  $viewer_entity_groups = module_invoke_all('activity_log_entity_groups', FALSE);
+  $results = array();
+  foreach (array('stream_owner', 'viewer') as $type) {
+    $results[$type] = array();
+    $temp = $type .'_entity_groups';
+    $groups = $$temp;
+    foreach (array_filter($settings['visibility'][$type .'_entity_group']) as $name) {
+      $group = $groups[$name];
+      if (isset($group['file']) && file_exists($group['file'])) {
+        require_once $group['file'];
+      }
+      $args = array($event, $settings);
+      if (isset($group['expose fields'])) {
+        while ($item = array_shift($group['expose fields'])) {
+          if ($item == 'id') {
+            $args[] = $settings['visibility'][$type .'_id'];
+          }
+          elseif ($item == 'type') {
+            $args[] = $type == 'stream_owner' ? $settings['visibility'][$type .'_type'] : 'user';
+          }
+          elseif ($item == 'acting_uid') {
+            $args[] = $settings['acting_uid'];
+          }
         }
       }
+      if (isset($group['additional arguments'])) {
+        $args = array_merge($args, $group['additional arguments']);
+      }
+      $results[$type] = array_merge_recursive($results[$type], call_user_func_array($group['items callback'], $args));
     }
-    if (isset($group['additional arguments'])) {
-      $args = array_merge($args, $group['additional arguments']);
-    }
-    $owners = array_merge_recursive($owners, call_user_func_array($group['items callback'], $args));
   }
+  $owners = $results['stream_owner'];
+  $viewers = array_unique($results['viewer']['user']);
   // Find similar events based on the grouping method.
-  if ($settings['grouping']['group_method'] == 'target_action') {
-    $result = db_query("
-      SELECT mid
-      FROM {activity_log_messages}
-      WHERE
-        tid = %d AND                 /* group by activity type */
-        target_id = %d AND           /* group by target entity */
-        target_type = '%s'
-      ORDER BY mid DESC
-    ", $event->tid, $event->target_id, $event->target_type);
-  }
-  elseif ($settings['grouping']['group_method'] == 'action') {
-    $result = db_query("
-      SELECT mid
-      FROM {activity_log_messages}
-      WHERE
-        tid = %d AND                 /* group by activity type */
-        created > %d AND             /* filter to groups that are new enough */
-        LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
-      ORDER BY mid DESC
-    ", $event->tid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max']);
-  }
-  elseif ($settings['grouping']['group_method'] == 'user_action') {
-    $result = db_query("
-      SELECT mid
-      FROM {activity_log_messages}
-      WHERE
-        tid = %d AND                 /* group by activity type */
-        acting_uid = %d AND          /* filter by action user */
-        created > %d AND             /* filter to groups that are new enough */
-        LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d /* filter to groups that don't have too many items in them already */
-      ORDER BY mid DESC
-    ", $event->tid, $event->acting_uid, $time - $settings['grouping']['group_interval'], $settings['grouping']['group_max']);
-  }
-  // If we found similar events, group with them. If not, save new messages.
-  $messages = array();
-  if (!empty($result)) {
+  $group_method = $settings['grouping']['group_method'];
+  if ($group_method != 'none') {
+    $query = "SELECT mid FROM {activity_log_messages} WHERE ";
+    $where = array(
+      "tid = %d", // filter by action type
+      "viewer_id IN (". db_placeholders($viewers) .")", // filter by viewer
+    );
+    $args = array_merge(array($event->tid), $viewers);
+    $or = array(); // filter by stream owner
+    foreach ($owners as $type => $ids) {
+      $ids = array_unique($ids);
+      $or[] = "(stream_owner_type = '%s' AND stream_owner_id IN (". db_placeholders($ids) ."))";
+      $args = array_merge($args, $ids);
+    }
+    $where[] = "(". implode(" OR ", $or) .")";
+    if ($group_method == 'target_action') {
+      $where[] = "target_id = %d"; // filter by target entity
+      $where[] = "target_type = '%s'";
+      $args[] = $event->target_id;
+      $args[] = $event->target_type;
+    }
+    elseif ($group_method == 'action' || $group_method == 'user_action') {
+      if ($group_method == 'user_action') {
+        $where[] = "acting_uid = %d"; // filter by acting user
+        $args[] = $event->acting_uid;
+      }
+      $where[] = "created > %d"; // filter by recency
+      $where[] = "LENGTH(aids) - LENGTH(REPLACE(aids, ',', '')) - 2 < %d"; // don't allow adding too many events per group
+      $args[] = $time - $settings['grouping']['group_interval'];
+      $args[] = $settings['grouping']['group_max'];
+    }
+    $query .= implode(" AND ", $where);
+    $result = db_query($query, $args);
     $mids = array();
     while ($message = db_fetch_object($result)) {
       $mids[] = $message->mid;
     }
-    if (!empty($mids)) {
-      db_query("
-        UPDATE {activity_log_messages}
-        SET aids = CONCAT(aids, %d, ','), last_updated = %d
-        WHERE mid IN (". db_placeholders($mids) .")"
-      , array_merge(array($event->aid, $event->created), $mids));
-      $result = db_query("SELECT * FROM {activity_log_messages} WHERE mid IN (". db_placeholders($mids) .")", $mids);
-      while ($message = db_fetch_object($result)) {
-        $messages[] = $message;
-      }
+  }
+  // If we found similar events, group with them. If not, save new messages.
+  $messages = array();
+  if (!empty($mids)) {
+    db_query("
+      UPDATE {activity_log_messages}
+      SET aids = CONCAT(aids, %d, ','), last_updated = %d
+      WHERE mid IN (". db_placeholders($mids) .")"
+    , array_merge(array($event->aid, $event->created), $mids));
+    $result = db_query("SELECT * FROM {activity_log_messages} WHERE mid IN (". db_placeholders($mids) .")", $mids);
+    while ($message = db_fetch_object($result)) {
+      $messages[] = $message;
     }
   }
-  if (empty($messages)) {
+  else {
     foreach ($owners as $type => $ids) {
       foreach (array_unique($ids) as $id) {
-        $message = (object) array(
-          'tid' => $event->tid,
-          'aids' => ','. $event->aid .',',
-          'created' => $event->created,
-          'last_updated' => $event->created,
-          'stream_owner_id' => $id,
-          'stream_owner_type' => $type,
-          'target_id' => $event->target_id,
-          'target_type' => $event->target_type,
-          'acting_uid' => $event->acting_uid,
-        );
-        drupal_write_record('activity_log_messages', $message);
-        $messages[] = $message;
+        foreach ($viewers as $viewer) {
+          $message = (object) array(
+            'tid' => $event->tid,
+            'aids' => ','. $event->aid .',',
+            'created' => $event->created,
+            'last_updated' => $event->created,
+            'stream_owner_id' => $id,
+            'stream_owner_type' => $type,
+            'viewer_id' => $viewer,
+            'target_id' => $event->target_id,
+            'target_type' => $event->target_type,
+            'acting_uid' => $event->acting_uid,
+          );
+          drupal_write_record('activity_log_messages', $message);
+          $messages[] = $message;
+        }
       }
     }
   }
