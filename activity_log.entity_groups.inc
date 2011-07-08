@@ -15,6 +15,9 @@ function activity_log_entity_groups($stream_owner = TRUE) {
   $fc = module_exists('fbss_comments');
   $ft = module_exists('facebook_status_tags');
   $tx = module_exists('taxonomy');
+  if ($ur) {
+    $ur = $ur && (db_result(db_query("SELECT COUNT(rtid) FROM {user_relationship_types}")) > 0);
+  }
   $groups = array(
     'custom' => array(
       'items callback' => 'activity_log_eg_custom',

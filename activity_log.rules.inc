@@ -25,6 +25,7 @@ function activity_log_log_action_form($settings, &$form) {
       'group_template' => '',
     ),
     'template' => '',
+    'stream_owner_entity_group' => array(),
     'stream_owner_id' => '',
     'stream_owner_type' => 'user',
     'acting_uid' => '',
@@ -42,7 +43,7 @@ function activity_log_log_action_form($settings, &$form) {
     '#type' => 'fieldset',
     '#title' => t('Group similar messages'),
     '#collapsible' => TRUE,
-    '#collapsed' => $settings['grouping']['group_template'] == 'none',
+    '#collapsed' => $settings['grouping']['group_method'] == 'none',
     '#description' => '<p>'. t('Filling in these settings will allow grouping activity messages of this type in activity streams.') .' '.
       t('That way, instead of saying e.g. "Jack likes this" and "Jill likes this" separately, only one message can appear saying "Jack and Jill like this."') .' '.
       t('Messages will be grouped if there are at least two similar messages.') .' '.
