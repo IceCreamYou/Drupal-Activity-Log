@@ -649,6 +649,10 @@ function activity_log_log_action($settings) {
   }
   $owners = $results['stream_owner'];
   $viewers = array_unique($results['viewer']['user']);
+  // If "everyone" is a valid viewer, we don't need to save records for specific users.
+  if (in_array(0, $viewers)) {
+    $viewers = array(0);
+  }
   // Find similar events based on the grouping method.
   $group_method = $settings['grouping']['group_method'];
   if ($group_method != 'none') {
