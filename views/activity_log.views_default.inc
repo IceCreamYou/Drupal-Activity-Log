@@ -4,16 +4,15 @@
  * Implementation of hook_views_default_views().
  */
 function activity_log_views_default_views() {
-  
   $view = new view;
   $view->name = 'activity_log_stream';
-  $view->description = 'An example stream showing all logged activity on the site';
+  $view->description = 'Displays activity streams.';
   $view->tag = '';
   $view->view_php = '';
   $view->base_table = 'activity_log_messages';
   $view->is_cacheable = FALSE;
   $view->api_version = 2;
-  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+  $view->disabled = FALSE;
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->override_option('fields', array(
     'message' => array(
@@ -85,13 +84,10 @@ function activity_log_views_default_views() {
       'default_options_div_prefix' => '',
       'default_argument_fixed' => '',
       'default_argument_user' => 0,
-      'default_argument_activity_log_stream_owner_type' => 'node',
+      'default_argument_activity_log_stream_owner_type' => 'user',
       'default_argument_php' => '',
       'validate_argument_node_type' => array(
-        'blog' => 0,
-        'forum' => 0,
         'page' => 0,
-        'story' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
@@ -101,12 +97,6 @@ function activity_log_views_default_views() {
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
-      'validate_argument_node_flag_name' => '*relationship*',
-      'validate_argument_node_flag_test' => 'flaggable',
-      'validate_argument_node_flag_id_type' => 'id',
-      'validate_argument_user_flag_name' => '*relationship*',
-      'validate_argument_user_flag_test' => 'flaggable',
-      'validate_argument_user_flag_id_type' => 'id',
       'validate_argument_php' => '',
     ),
     'stream_owner_id' => array(
@@ -134,13 +124,10 @@ function activity_log_views_default_views() {
       'default_options_div_prefix' => '',
       'default_argument_fixed' => '',
       'default_argument_user' => 0,
-      'default_argument_activity_log_stream_owner_type' => 'node',
+      'default_argument_activity_log_stream_owner_type' => 'user',
       'default_argument_php' => '',
       'validate_argument_node_type' => array(
-        'blog' => 0,
-        'forum' => 0,
         'page' => 0,
-        'story' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
@@ -150,30 +137,24 @@ function activity_log_views_default_views() {
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
-      'validate_argument_node_flag_name' => '*relationship*',
-      'validate_argument_node_flag_test' => 'flaggable',
-      'validate_argument_node_flag_id_type' => 'id',
-      'validate_argument_user_flag_name' => '*relationship*',
-      'validate_argument_user_flag_test' => 'flaggable',
-      'validate_argument_user_flag_id_type' => 'id',
       'validate_argument_php' => '',
     ),
   ));
   $handler->override_option('access', array(
-    'type' => 'none',
+    'type' => 'perm',
+    'perm' => 'view all activity messages',
   ));
   $handler->override_option('cache', array(
     'type' => 'none',
   ));
-  $handler->override_option('empty', 'No Activity');
-  $handler->override_option('empty_format', '1');
+  $handler->override_option('use_ajax', TRUE);
   $handler->override_option('use_pager', '1');
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->override_option('path', 'activities');
   $handler->override_option('menu', array(
     'type' => 'normal',
-    'title' => 'Activity Stream',
-    'description' => 'A stream showing all the activity on the site',
+    'title' => 'Activity stream',
+    'description' => 'Displays activity streams.',
     'weight' => '0',
     'name' => 'navigation',
   ));
@@ -184,7 +165,6 @@ function activity_log_views_default_views() {
     'weight' => 0,
     'name' => 'navigation',
   ));
-  
   $views[$view->name] = $view;
   return $views;
 }
