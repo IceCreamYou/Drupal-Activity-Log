@@ -196,37 +196,39 @@ function activity_log_views_data() {
     ),
   );
 
-  // Radioactivity integration
+  // Radioactivity integration. TODO: Move this into al_radioactivity
 
-  foreach (radioactivity_get_decay_profiles() as $dpid => $decay_profile) {
-    $data['radioactivity']['table']['group'] = t('Radioactivity (@profile)', array('@profile' => $decay_profile['label']));
-    $data['radioactivity']['table']['title'] = t('Activity energy');
-    $data['radioactivity']['table']['help'] = t('Activity radioactive energy in decay profile @profile.', array('@profile' => $decay_profile['label']));
-
-    $data['radioactivity']['table']['join']['activity_log_messages'] = array(
-      'left_field' => 'nid',
-      'field' => 'id',
-      'table' => 'radioactivity',
-      'extra' => array(
-        array(
-          'field' => 'class',
-          'value' => 'act_log',
+  if (module_exists('al_radioactivity')) {
+    foreach (radioactivity_get_decay_profiles() as $dpid => $decay_profile) {
+      $data['radioactivity']['table']['group'] = t('Radioactivity (@profile)', array('@profile' => $decay_profile['label']));
+      $data['radioactivity']['table']['title'] = t('Activity energy');
+      $data['radioactivity']['table']['help'] = t('Activity radioactive energy in decay profile @profile.', array('@profile' => $decay_profile['label']));
+  
+      $data['radioactivity']['table']['join']['activity_log_messages'] = array(
+        'left_field' => 'nid',
+        'field' => 'id',
+        'table' => 'radioactivity',
+        'extra' => array(
+          array(
+            'field' => 'class',
+            'value' => 'act_log',
+          ),
+          array(
+            'field' => 'decay_profile',
+            'value' => $dpid,
+            'numeric' => TRUE,
+          ),
         ),
-        array(
-          'field' => 'decay_profile',
-          'value' => $dpid,
-          'numeric' => TRUE,
+      );
+  
+      $data['radioactivity']['energy'] = array(
+        'title' => t('Node energy'),
+        'help' => t('The radioactive energy of the node.'),
+        'sort' => array(
+          'handler' => 'activity_log_views_handler_sort_radioactivity',
         ),
-      ),
-    );
-
-    $data['radioactivity']['energy'] = array(
-      'title' => t('Node energy'),
-      'help' => t('The radioactive energy of the node.'),
-      'sort' => array(
-        'handler' => 'activity_log_views_handler_sort_radioactivity',
-      ),
-    );
+      );
+    }
   }
 
   return $data;
