@@ -20,10 +20,10 @@
  *   The themed activity message.
  */
 function theme_activity_log_item($record, $reset = FALSE) {
-  if ($reset || empty($record->cached)) {
+  if ($reset || empty($record->cached) || empty($record->cacheable)) {
     $classes = array();
     $classes[] = 'activity-log-rule-'. $record->rule;
-    $classes[] = 'activity-log-action-'. strtolower(preg_replace('%[^\w\-]%', '', str_replace(' ', '_', $record->action_label)));
+    $classes[] = 'activity-log-action-'. drupal_strtolower(preg_replace('%[^\w\-]%', '', str_replace(' ', '_', $record->action_label)));
     if (count($record->events) === 1) {
       $classes[] = 'activity-message-single';
     }

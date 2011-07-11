@@ -28,7 +28,10 @@ function activity_log_views_handlers() {
       'path' => drupal_get_path('module', 'activity_log') .'/views',
     ),
     'handlers' => array(
-      'activity_log_views_handler_field_mid' => array(
+      'activity_log_views_handler_argument_owner_id' => array(
+        'parent' => 'views_handler_argument_numeric',
+      ),
+      'activity_log_views_handler_field_message' => array(
         'parent' => 'views_handler_field',
       ),
       'activity_log_views_handler_filter_owner_type' => array(
@@ -102,7 +105,7 @@ function activity_log_views_data() {
     'help' => t('The evaluated template from the event'),
     'field' => array(
       'field' => 'mid',
-      'handler' => 'activity_log_views_handler_field_mid',
+      'handler' => 'activity_log_views_handler_field_message',
     ),
   );
 
@@ -113,7 +116,7 @@ function activity_log_views_data() {
       'handler' => 'views_handler_filter_numeric',
     ),
     'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
+      'handler' => 'activity_log_views_handler_argument_owner_id',
     ),
   );
 

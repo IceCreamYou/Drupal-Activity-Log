@@ -17,14 +17,14 @@ class activity_log_views_handler_sort_radioactivity extends views_handler_sort {
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     $form['join_type'] = array(
-       '#type' => 'radios',
-       '#title' => t('Join type'),
-       '#options' => array(
-         'left' => t('LEFT JOIN: Include all activities'),
-         'inner' => t('INNER JOIN: Include only activities that have Radioactivity data (faster)'),
-       ),
-       '#description' => t('Select the join type for sorting.'),
-       '#default_value' => $this->options['join_type'],
+      '#type' => 'radios',
+      '#title' => t('Join type'),
+      '#options' => array(
+        'left' => t('LEFT JOIN: Include all activities'),
+        'inner' => t('INNER JOIN: Include only activities that have Radioactivity data (faster)'),
+      ),
+      '#description' => t('Select the join type for sorting.'),
+      '#default_value' => $this->options['join_type'],
     );
   }
   function admin_summary() {
@@ -35,7 +35,7 @@ class activity_log_views_handler_sort_radioactivity extends views_handler_sort {
   function ensure_my_table() {
     if (!isset($this->table_alias)) {
       $join = $this->get_join();
-      $join->type = strtoupper($this->options['join_type']);
+      $join->type = drupal_strtoupper($this->options['join_type']);
       $this->table_alias = $this->query->ensure_table($this->table, $this->relationship, $join);
     }
     return $this->table_alias;

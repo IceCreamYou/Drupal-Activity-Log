@@ -106,3 +106,18 @@ function hook_activity_log_token_resources() {
     ),
   );
 }
+
+/**
+ * Implementation of hook_activity_log_uncacheable_tokens().
+ *
+ * Returns an array of tokens that cannot be cached. Messages generated from
+ * templates that use these tokens will never be cached.
+ */
+function hook_activity_log_uncacheable_tokens() {
+  return array(
+    '[:global:user-id]',
+    '[:global:user-mail]',
+    '[:global:user-name]',
+    ':userpoints]',
+  );
+}

@@ -41,6 +41,7 @@ function activity_log_menu() {
  */
 function activity_log_perm() {
   return array(
+    'administer loading arbitrary CSS and JS files for cached messages',
     'configure preferences for which activity types appear in activity streams',
     'view all activity messages',
     'view own activity messages',

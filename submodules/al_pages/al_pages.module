@@ -138,7 +138,7 @@ function al_pages_pathauto($op) {
   $placeholders = array();
   foreach ($tokens as $type => $set) {
     if ($type != 'global') {
-       foreach ($set as $pattern => $description) {
+      foreach ($set as $pattern => $description) {
         $placeholders["[$pattern]"] = $description;
       }
     }
