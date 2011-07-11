@@ -32,7 +32,7 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
     if (!empty($opt)) {
       $form['include'] = array(
         '#title' => t('Include activity for'),
-        '#description' => t('Include activity on this view from other streams.'),
+        '#description' => t('Include activity on this view from other streams if the argument user is the current user.'),
         '#type'  => 'checkboxes',
         '#options' => $opt,
         '#default_value' => $this->options['include'],
@@ -45,6 +45,7 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
       parent::query();
       return;
     }
+    global $user;
     $this->ensure_my_table();
     if (!empty($this->options['break_phrase'])) {
       views_break_phrase($this->argument, $this);
@@ -54,7 +55,7 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
     }
     if (count($this->value) > 1) {
       $operator = empty($this->options['not']) ? 'IN' : 'NOT IN';
-      $placeholders = '('. implode(', ', array_fill(0, sizeof($this->value), '%d')) .')';
+      $placeholders = '('. db_placeholders($this->value) .')';
       $args = $this->value;
     }
     else {
@@ -62,48 +63,63 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
       $placeholders = '%d';
       $args = array($this->argument);
     }
-    $query = "$this->table_alias.$this->real_field $operator $placeholders OR ($this->table_alias.stream_owner_type = 'user' AND (";
+    $query = "$this->table_alias.$this->real_field $operator $placeholders";
     $query_args = $args;
-    $subquery = array();
-    if (!empty($options['og']) && module_exists('og')) {
-      $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (SELECT nid FROM {og_uid} WHERE is_active = 1 AND uid $operator $placeholders)");
-      $query_args = array_merge($query_args, $args);
-    }
-    if (module_exists('user_relationships_api')) {
-      if (!empty($options['ur'])) {
-        $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (". _activity_log_get_ur_query($operator, $placeholders) .")");
-        $query_args = array_merge($query_args, $args, $args);
+    if (in_array($user->uid, $args)) {
+      $subquery = array();
+      if (!empty($options['og']) && module_exists('og')) {
+        $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (SELECT nid FROM {og_uid} WHERE is_active = 1 AND uid $operator $placeholders)");
+        $query_args = array_merge($query_args, $args);
       }
-      else {
-        foreach (user_relationships_types_load() as $type) {
-          if (in_array('ur-'. $type->rtid, $options)) {
-            $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (". _activity_log_get_ur_query($operator, $placeholders, $type->rtid) .")");
-            $query_args = array_merge($query_args, $args, $args, array($type->rtid));
+      if (module_exists('user_relationships_api')) {
+        if (!empty($options['ur'])) {
+          $rels = $this->_activity_log_get_user_relationships($user->uid);
+          if (!empty($rels)) {
+            $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (". db_placeholders($rels) .")");
+            $query_args = array_merge($query_args, $rels);
+          }
+        }
+        else {
+          foreach (user_relationships_types_load() as $type) {
+            if (in_array('ur-'. $type->rtid, $options)) {
+              $rels = $this->_activity_log_get_user_relationships($user->uid, $type->rtid);
+              if (!empty($rels)) {
+                $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (". db_placeholders($rels) .")");
+                $query_args = array_merge($query_args, $rels);
+              }
+            }
           }
         }
       }
+      if (!empty($subquery)) {
+        $query .= " OR ($this->table_alias.stream_owner_type = 'user' AND (". implode(" OR ", $subquery) ."))";
+      }
     }
-    $query .= implode(" OR ", $subquery) ."))";
     $this->query->add_where(0, $query, $query_args);
   }
-  function _activity_log_get_ur_query($operator, $placeholders, $rtid = 0) {
+  function _activity_log_get_user_relationships($uid, $rtid = 0) {
     if (!$rtid) {
-      return "
+      $result = db_query("
         SELECT ur.requester_id, ur.requestee_id
         FROM user_relationships ur
         INNER JOIN user_relationship_types urt
           ON ur.rtid = urt.rtid
-        WHERE (ur.requester_id $operator $placeholders OR ur.requestee_id $operator $placeholders) AND (ur.approved = 1 OR urt.is_oneway = 0)
-      ";
+        WHERE (ur.requester_id = %d OR ur.requestee_id = %d) AND (ur.approved = 1 OR urt.is_oneway = 0)
+      ", $uid, $uid);
     }
     else {
-      return "
+      $result = db_query("
         SELECT ur.requester_id, ur.requestee_id
         FROM user_relationships ur
         INNER JOIN user_relationship_types urt
           ON ur.rtid = urt.rtid
-        WHERE (ur.requester_id $operator $placeholders OR ur.requestee_id $operator $placeholders) AND (ur.approved = 1 OR urt.is_oneway = 0) AND ur.rtid = %d
-      ";
+        WHERE (ur.requester_id = %d OR ur.requestee_id = %d) AND (ur.approved = 1 OR urt.is_oneway = 0) AND ur.rtid = %d
+      ", $uid, $uid, $rtid);
     }
+    $uids = array();
+    while ($rel = db_fetch_object($result)) {
+      $uids[] = ($rel->requester_id == $uid) ? $rel->requestee_id : $rel->requester_id;
+    }
+    return $uids;
   }
 }
