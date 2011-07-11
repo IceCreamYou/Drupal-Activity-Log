@@ -67,6 +67,11 @@ function activity_log_schema() {
         'not null' => TRUE,
         'description' => 'An array of the input evaluators to run over the template.',
       ),
+      'resources' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'The CSS and JS resources required by this template.',
+      ),
     ),
     'primary key' => array('tid'),
   );
@@ -211,6 +216,11 @@ function activity_log_schema() {
         'unsigned' => TRUE,
         'default' => 0,
         'description' => 'The ID of the user who took the action.',
+      ),
+      'cached' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'The cached message HTML, fully evaluated.',
       ),
     ),
     'indexes' => array(

@@ -362,6 +362,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'collapse_method' => $v['grouping']['collapse_method'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
+    'resources' => _activity_log_determine_resources($v['templates'], $v['grouping']['templates'], $v['grouping']['group_summary']);
   );
   if (!empty($tid)) {
     $record->tid = $tid;
@@ -462,6 +463,71 @@ function activity_log_autocomplete_public_name($string = '') {
     }
   }
   drupal_json($matches);
+}
+
+/**
+ * Determines which CSS and JS resources are required for a template.
+ */
+function _activity_log_determine_resources($templates, $group_templates, $group_summary) {
+  $resources = array();
+  foreach (module_invoke_all('activity_log_token_resources') as $token => $sources) {
+    if (strpos($group_summary, $token) !== FALSE) {
+      $resources = array_merge_recursive($resources, $sources);
+    }
+    foreach ($templates as $lang => $info) {
+      if (strpos($info['template'], $token) !== FALSE) {
+        $resources = array_merge_recursive($resources, $sources);
+        break;
+      }
+    }
+    foreach ($group_templates as $lang => $info) {
+      if (strpos($info['template'], $token) !== FALSE) {
+        $resources = array_merge_recursive($resources, $sources);
+        break;
+      }
+    }
+  }
+  return $resources;
+}
+
+/**
+ * Implementation of hook_activity_log_token_resources().
+ */
+function activity_log_activity_log_token_resources() {
+  $activity_log_path = drupal_get_path('module', 'activity_log');
+  $resources = array();
+  if (module_exists('facebook_status')) {
+    $fbss_path = drupal_get_path('module', 'facebook_status') .'/resources';
+    $resources['[status:status-themed]'] = array(
+      'css' => array($fbss_path .'/facebook_status.css'),
+      'js' => array($fbss_path .'/facebook_status.js'),
+    );
+    if (module_exists('fbss_comments')) {
+      $fbssc_path = drupal_get_path('module', 'fbss_comments');
+      $resources['[status:status-themed]']['css'][] = $fbssc_path .'/fbss_comments.css';
+      $resources['[status:status-themed]']['js'][] = $fbssc_path .'/fbss_comments.js';
+      $resources['[status:status-themed]']['js'][] = $fbssc_path .'/fbss_comments_views_ahah.js';
+      if (variable_get('fbss_comments_enter', 0)) {
+        $resources['[status:status-themed]']['js'][] = $fbssc_path .'/fbss_comments_enter.js';
+      }
+    }
+  }
+  if (module_exists('flag')) {
+    $flag_path = drupal_get_path('module', 'flag') .'/theme';
+    $resources[':flag-'] = array(
+      'css' => array($flag_path .'/flag.css'),
+      'js' => array($flag_path .'/flag.js'),
+    );
+  }
+  $resources['[names]'] = array(
+    'css' => array($activity_log_path .'/activity_log.css'),
+    'js' => array($activity_log_path .'/activity_log.js'),
+  );
+  $resources['[collection]'] = array(
+    'css' => array($activity_log_path .'/activity_log.css'),
+    'js' => array($activity_log_path .'/activity_log.js'),
+  );
+  return $resources;
 }
 
 //=============================
@@ -697,7 +763,7 @@ function activity_log_log_action($settings) {
   if (!empty($mids)) {
     db_query("
       UPDATE {activity_log_messages}
-      SET aids = CONCAT(aids, %d, ','), last_updated = %d
+      SET aids = CONCAT(aids, %d, ','), last_updated = %d, cached = ''
       WHERE mid IN (". db_placeholders($mids) .")"
     , array_merge(array($event->aid, $event->created), $mids));
     $result = db_query("SELECT * FROM {activity_log_messages} WHERE mid IN (". db_placeholders($mids) .")", $mids);
@@ -720,6 +786,7 @@ function activity_log_log_action($settings) {
             'target_id' => $event->target_id,
             'target_type' => $event->target_type,
             'acting_uid' => $event->acting_uid,
+            'cached' => '',
           );
           drupal_write_record('activity_log_messages', $message);
           $messages[] = $message;

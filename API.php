@@ -56,3 +56,53 @@ function hook_activity_log_event($event, $group, $settings) {
     }
   }
 }
+
+/**
+ * Implementation of hook_activity_log_entity_groups().
+ *
+ * Defines groups of potential stream owners and message viewers for an action.
+ *
+ * @param $stream_owner
+ *   If TRUE, the groups returned are valid for stream owners -- that is, all
+ *   entity types, but "everyone" is not valid. If FALSE, the groups returned
+ *   are only for users, and so are valid for message viewers.
+ * @return
+ *   An associative array of group definitions keyed by the machine name.
+ *   Values are also associative arrays that can have the following elements:
+ *   - items callback: A function that returns an associative array where the
+ *     keys are valid stream owner types (node, user, taxonomy_term) and the
+ *     values are arrays of stream owner IDs of that type.
+ *   - title: A translated, human-friendly name of the group.
+ *   - weight: (Optional) The group's weight in an ordering of all groups.
+ *     Lighter weights float to the top. Defaults to 0.
+ *   - expose fields: (Optional) An array of which additional fields should be
+ *     exposed if this group is selected. Valid values for this array are "id,"
+ *     "type," and (if you know what you're doing) "acting_uid." Defaults to
+ *     array().
+ *   - additional arguments: (Optional) Extra arguments to pass to the items
+ *     callback.
+ *   - file: (Optional) The file where the items callback exists.
+ */
+function hook_activity_log_entity_groups($stream_owner = TRUE) {
+  module_load_include('inc', 'activity_log', 'activity_log.entity_groups');
+  return activity_log_entity_groups($stream_owner);
+}
+
+/**
+ * Implementation of hook_activity_log_token_resources().
+ *
+ * Maps tokens to CSS and JS resources they require. The specified resources
+ * will be loaded for cached messages that use the relevant tokens.
+ */
+function hook_activity_log_token_resources() {
+  return array(
+    '[:global:token]' => array(
+      'css' => array(
+        drupal_get_path('module', 'hook') .'/hook.css';
+      ),
+      'js' => array(
+        drupal_get_path('module', 'hook') .'/hook.js';
+      ),
+    ),
+  );
+}

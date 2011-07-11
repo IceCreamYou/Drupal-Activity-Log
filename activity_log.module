@@ -7,9 +7,11 @@
 
 define(ACTIVITY_LOG_DELIMITER, '#!ACTIVITY_LOG_DELIMITER:');
 
-//============================
-// CORE HOOK IMPLEMENTATIONS.
-//============================
+module_load_include('inc', 'activity_log', 'activity_log.cache');
+
+//===================================
+// CORE SYSTEM HOOK IMPLEMENTATIONS.
+//===================================
 
 /**
  * Implementation of hook_menu().
@@ -46,119 +48,6 @@ function activity_log_perm() {
 }
 
 /**
- * Implementation of hook_user().
- */
-function activity_log_user($op, &$edit, &$account, $category = NULL) {
-  if ($op == 'form' && user_access('configure preferences for which activity types appear in activity streams', $account)) {
-    $form = array();
-    $result = db_query("SELECT * FROM {activity_log_action_names}");
-    $types = array();
-    $default_values = array();
-    while ($row = db_fetch_object($result)) {
-      $types[$row->pid] = t($row->public_name);
-      $default_values[$row->pid] = $row->pid;
-    }
-    if (empty($types)) {
-      return;
-    }
-    $result = db_query("SELECT pid FROM {activity_log_disabled_types} WHERE uid = %d", $account->uid);
-    $disabled = array();
-    while ($row = db_fetch_object($result)) {
-      $default_values[$row->pid] = 0;
-      $disabled[] = $row->pid;
-    }
-    $form['activity_log'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Activity stream settings'),
-      '#description' => t('Enable or disable the types of activity you would like to see when you view your activity stream.'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['activity_log']['activity_log_types'] = array(
-      '#type' => 'checkboxes',
-      '#options' => $types,
-      '#default_value' => $default_values,
-    );
-    $form['activity_log']['activity_log_types_all_values'] = array(
-      '#type' => 'value',
-      '#value' => array_keys($types),
-    );
-    $form['activity_log']['activity_log_types_disabled_values'] = array(
-      '#type' => 'value',
-      '#value' => $disabled,
-    );
-    return $form;
-  }
-  elseif ($op == 'update' && user_access('configure preferences for which activity types appear in activity streams', $account)) {
-    $all = $edit['activity_log_types_all_values'];
-    $disabled = $edit['activity_log_types_disabled_values'];
-    $values = array_filter($edit['activity_log_types']);
-    $delete = array();
-    $add = array();
-    foreach ($all as $type) {
-      // Previously disabled, now enabled; delete record of it being disabled
-      if (in_array($type, $disabled) && in_array($type, $values)) {
-        $delete[] = $type;
-      }
-      // Previously enabled, now disabled; add record of it being disabled
-      elseif (!in_array($type, $disabled) && !in_array($type, $values)) {
-        $add[] = $type;
-      }
-    }
-    if (!empty($delete)) {
-      db_query("DELETE FROM {activity_log_disabled_types} WHERE pid IN (". db_placeholders($delete) .")", $delete);
-    }
-    if (!empty($add)) {
-      $subquery = array();
-      $args = array();
-      foreach ($add as $type) {
-        $subquery[] = "(%d, %d)";
-        $args[] = $account->uid;
-        $args[] = $type;
-      }
-      db_query("INSERT INTO {activity_log_disabled_types} (uid, pid) VALUES". implode(',', $subquery), $args);
-    }
-  }
-  elseif ($op == 'delete') {
-    db_query("
-      DELETE FROM {activity_log_events}
-      WHERE
-        acting_uid = %d OR
-        (stream_owner_id = %d AND stream_owner_type = 'user') OR
-        (target_id = %d AND target_type = 'user')
-    ", $account->uid, $account->uid, $account->uid);
-    db_query("
-      DELETE FROM {activity_log_messages}
-      WHERE
-        acting_uid = %d OR
-        (stream_owner_id = %d AND stream_owner_type = 'user') OR
-        (target_id = %d AND target_type = 'user')
-    ", $account->uid, $account->uid, $account->uid);
-    db_query("DELETE FROM {activity_log_disabled_types} WHERE uid = %d", $account->uid);
-  }
-}
-
-/**
- * Implementation of hook_nodeapi().
- */
-function activity_log_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  if ($op == 'delete') {
-    db_query("
-      DELETE FROM {activity_log_events}
-      WHERE
-        (stream_owner_id = %d AND stream_owner_type = 'node') OR
-        (target_id = %d AND target_type = 'node')
-    ", $node->nid, $node->nid);
-    db_query("
-      DELETE FROM {activity_log_messages}
-      WHERE
-        (stream_owner_id = %d AND stream_owner_type = 'node') OR
-        (target_id = %d AND target_type = 'node')
-    ", $node->nid, $node->nid);
-  }
-}
-
-/**
  * Implementation of hook_cron().
  */
 function activity_log_cron() {
@@ -177,77 +66,40 @@ function activity_log_theme($existing, $type, $theme, $path) {
       'arguments' => array(
         'aid' => NULL,
       ),
+      'file' => 'activity_log.theme.inc',
     ),
     'activity_log_collapse' => array(
       'arguments' => array(
         'collection' => array(),
       ),
+      'file' => 'activity_log.theme.inc',
     ),
   );
 }
 
-//==================
-// THEME FUNCTIONS.
-//==================
-
 /**
- * Renders an individual activity log message.
- *
- * @param $record
- *   A fully qualified activity record.
- * @return
- *   The themed activity message.
+ * Implementation of hook_user().
  */
-function theme_activity_log_item($record) {
-  $classes = array();
-  $classes[] = 'activity-log-rule-'. $record->rule;
-  $classes[] = 'activity-log-action-'. strtolower(preg_replace('%[^\w\-]%', '', str_replace(' ', '_', $record->action_label)));
-  if (count($record->events) === 1) {
-    $classes[] = 'activity-message-single';
+function activity_log_user($op, &$edit, &$account, $category = NULL) {
+  if ($op == 'form' && user_access('configure preferences for which activity types appear in activity streams', $account)) {
+    module_load_include('inc', 'activity_log', 'activity_log.user_settings');
+    return _activity_log_user_form($account);
   }
-  else {
-    $classes[] = 'activity-message-grouped';
+  elseif ($op == 'update') {
+    if (user_access('configure preferences for which activity types appear in activity streams', $account)) {
+      module_load_include('inc', 'activity_log', 'activity_log.user_settings');
+      _activity_log_user_form_submit($edit);
+    }
+    _activity_log_user_update($account->uid);
   }
-  return '<div class="activity-message '. implode(' ', $classes) .'">'. activity_log_evaluate_record($record) .'</div>';
+  elseif ($op == 'delete') {
+    _activity_log_user_delete($account->uid);
+  }
 }
 
-/**
- * Collapses an array to a string summarizing its elements.
- *
- * Depending on the number of elements in the collection, the result could be
- * in one of the following formats:
- * - [nothing]
- * - Joe
- * - Jack and Jill
- * - Jack, Jill, and Joe
- * - Jane, Jim, and N other people
- *
- * @param $collection
- *   An array of strings to collapse into a single string.
- * @param $method
- *   The method to use to collapse the collection. Should be the name of a
- *   function that takes the collection array and the number of items in that
- *   array as arguments.
- * @return
- *   A string representing the collapsed collection array.
- */
-function theme_activity_log_collapse($collection = array(), $method = 'activity_log_collapse_inline') {
-  $count = count($collection);
-  if ($count == 0) {
-    return;
-  }
-  elseif ($count === 1) {
-    $output = $collection[0];
-  }
-  else {
-    $output = $method($collection, $count);
-  }
-  return '<span class="activity-log-collection activity-log-collection-method-'. $method .'">'. $output .'</span>';
-}
-
-//====================================
-// APPLICATION PROGRAMMING INTERFACE.
-//====================================
+//===================
+// USEFUL FUNCTIONS.
+//===================
 
 /**
  * Loads an activity log record.
@@ -266,105 +118,18 @@ function activity_log_load($mid) {
     WHERE mid = %d
   ", $mid));
   $record->eval_input = unserialize($record->eval_input);
-  rules_include('rules');
-  $aids = array_filter(explode(',', $record->aids));
+  $record->resources = unserialize($record->resources);
+  $record->aids = array_filter(explode(',', $record->aids));
   $record->events = array();
   $result = db_query("
-    SELECT * FROM {activity_log_events} WHERE aid IN (". db_placeholders($aids) .")
-  ", $aids);
+    SELECT * FROM {activity_log_events} WHERE aid IN (". db_placeholders($record->aids) .")
+  ", $record->aids);
+  rules_include('rules');
   while ($event = db_fetch_object($result)) {
     $event->id_map = unserialize($event->id_map);
     $record->events[$event->aid] = $event;
   }
   return $record;
-}
-
-/**
- * Evaluate the template for a given activity record.
- *
- * @param $record
- *   The activity record whose template should be evaluated.
- * @return
- *   The text of an activity message.
- */
-function activity_log_evaluate_record($record) {
-  $time = time();
-  rules_include('rules');
-  $user_lang = user_preferred_language($GLOBALS['user'])->language;
-  $default_lang = language_default('language');
-  // Get the stored data we need to apply the Rules input evaluators.
-  $master_element = array('#settings' => array(
-    'placeholder' => '',
-    'grouping' => array(
-      'group_summary' => $record->group_summary,
-      'templates' => unserialize($record->group_template),
-    ),
-    'visibility' => array(
-      'stream_owner_id' => '',
-      'viewer_id' => '',
-    ),
-    'templates' => unserialize($record->template),
-    'acting_uid' => '',
-    'tid' => $record->tid,
-    '#eval input' => $record->eval_input,
-  ));
-  // Evaluate all of our grouped events.
-  $template = '';
-  $group_template = '';
-  $names = array();
-  $collection = array();
-  foreach ($record->events as $event) {
-    $element = $master_element;
-    // Reconstruct the Rules State as if the event was triggered just now.
-    $state = $event->id_map['state'];
-    foreach ($state['variables'] as $type => $info) {
-      $info->data->_data = activity_log_get_variable($type, $event->id_map);
-    }
-    // Apply the Rules input evaluators.
-    rules_apply_input_evaluators($element, $state);
-    // Keep track of the evaluated templates.
-    $templates = $element['#settings']['templates'];
-    $template = empty($templates[$user_lang]['template']) ? $templates[$default_lang]['template'] : $templates[$user_lang]['template'];
-    $group_templates = $element['#settings']['grouping']['templates'];
-    $group_template = empty($group_templates[$user_lang]['template']) ? $group_templates[$default_lang]['template'] : $group_templates[$user_lang]['template'];
-    // Compute the group template variables.
-    if (strpos($group_template, '[names]') !== FALSE) {
-      $acting_user = activity_log_user_load($event->acting_uid);
-      $names[] = theme('username', $acting_user);
-    }
-    if (strpos($group_template, '[collection]') !== FALSE) {
-      $collection[] = $element['#settings']['grouping']['group_summary'];
-    }
-  }
-  if (count($record->events) === 1) {
-    return $template;
-  }
-  return str_replace(
-    array('[names]', '[collection]'),
-    array(
-      theme('activity_log_collapse', array_unique($names)),
-      theme('activity_log_collapse', array_unique($collection), $record->collapse_method)
-    ),
-    $group_template
-  );
-}
-
-//===================
-// HELPER FUNCTIONS.
-//===================
-
-/**
- * Load an object in its current state so that we can replace the old version.
- *
- * It is mostly important to do this so that Token executes the correct
- * replacements. We load the new objects by identifying their Rules class type
- * and executing its load() method.
- */
-function activity_log_get_variable($type, $id_map) {
-  if (class_exists($id_map[$type]['class'])) {
-    $object = new $id_map[$type]['class'];
-    return $object->load($id_map[$type]['id']);
-  }
 }
 
 /**
@@ -464,9 +229,9 @@ function activity_log_element_sort($a, $b) {
   return ($a_weight < $b_weight) ? -1 : 1;
 }
 
-//================================
-// COLLECTION COLLAPSING METHODS.
-//================================
+//=====================
+// ACTIVITY LOG HOOKS.
+//=====================
 
 /**
  * Implementation of hook_activity_log_collapse_methods().
@@ -480,88 +245,7 @@ function activity_log_activity_log_collapse_methods() {
 }
 
 /**
- * Collapses an array of strings into the format "A, B, and 3 others."
- */
-function activity_log_collapse_inline($collection, $count) {
-  if ($count == 2) {
-    $output = t('!first and !second', array('!first' => $collection[0], '!second' => $collection[1]));
-  }
-  elseif ($count == 3) {
-    $output = t('!first, !second, and !third', array(
-      '!first' => $collection[0],
-      '!second' => $collection[1],
-      '!third' => $collection[2],
-    ));
-  }
-  else {
-    $path = drupal_get_path('module', 'activity_log');
-    drupal_add_css($path .'/activity_log.css');
-    drupal_add_js($path .'/activity_log.js');
-    $first = array_pop($collection);
-    $second = array_pop($collection);
-    $output = t('!first, !second, and <a class="activity-log-collection-more" href="!here">@count others</a>', array(
-      '!first' => $first,
-      '!second' => $second,
-      '!here' => url($_GET['q'], array('absolute' => TRUE)),
-      '@count' => $count - 2,
-    ));
-    $collection[] = $second;
-    $output .= '<div class="activity-log-collection-more-expand">'.
-      t('!collection, and !last', array('!collection' => implode(', ', $collection), '!last' => $first))
-    .'</div>';
-  }
-  return $output;
-}
-
-/**
- * Collapses an array of strings into a horizontal list, e.g. "A B C D".
- */
-function activity_log_collapse_list_horizontal($collection, $count) {
-  drupal_add_css(drupal_get_path('module', 'activity_log') .'/activity_log.css');
-  return theme('item_list', $collection, NULL, 'ul', array('class' => 'activity-log-collection-list-horizontal'));
-}
-
-/**
- * Collapses an array of strings into a vertical list, e.g.:
- * - A
- * - B
- * - C
- * - D
- */
-function activity_log_collapse_list_vertical($collection, $count) {
-  drupal_add_css(drupal_get_path('module', 'activity_log') .'/activity_log.css');
-  return theme('item_list', $collection, NULL, 'ul', array('class' => 'activity-log-collection-list-vertical'));
-}
-
-//=======================
-// ENTITY GROUP METHODS.
-//=======================
-
-/**
  * Implementation of hook_activity_log_entity_groups().
- *
- * Defines groups of potential stream owners and message viewers for an action.
- *
- * @param $stream_owner
- *   If TRUE, the groups returned are valid for stream owners -- that is, all
- *   entity types, but "everyone" is not valid. If FALSE, the groups returned
- *   are only for users, and so are valid for message viewers.
- * @return
- *   An associative array of group definitions keyed by the machine name.
- *   Values are also associative arrays that can have the following elements:
- *   - items callback: A function that returns an associative array where the
- *     keys are valid stream owner types (node, user, taxonomy_term) and the
- *     values are arrays of stream owner IDs of that type.
- *   - title: A translated, human-friendly name of the group.
- *   - weight: (Optional) The group's weight in an ordering of all groups.
- *     Lighter weights float to the top. Defaults to 0.
- *   - expose fields: (Optional) An array of which additional fields should be
- *     exposed if this group is selected. Valid values for this array are "id,"
- *     "type," and (if you know what you're doing) "acting_uid." Defaults to
- *     array().
- *   - additional arguments: (Optional) Extra arguments to pass to the items
- *     callback.
- *   - file: (Optional) The file where the items callback exists.
  */
 function activity_log_activity_log_entity_groups($stream_owner = TRUE) {
   module_load_include('inc', 'activity_log', 'activity_log.entity_groups');
@@ -569,30 +253,29 @@ function activity_log_activity_log_entity_groups($stream_owner = TRUE) {
 }
 
 //====================
+// VIEWS INTEGRATION.
+//====================
+
+/**
+ * Implementation of hook_views_api().
+ */
+function activity_log_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'activity_log') . '/views',
+  );
+}
+
+//====================
 // TOKEN INTEGRATION.
 //====================
+
+// TODO: Remove this after http://drupal.org/node/1202648 lands.
 
 /**
  * Implementation of hook_token_list().
  */
 function activity_log_token_list($type = 'all') {
-  if ($type == 'activity_log') {
-    $tokens = array(
-      'activity_log' => array(
-        'activity-id' => t('The ID of the logged activity'),
-        'activity-objects' => t('A comma-separated list of the types of objects the activity is about.'),
-        'activity-template-id' => t('The ID of the template used to generate the activity message.'),
-        'activity-stream-id' => t('The ID of the entity in whose stream the activity message appears.'),
-        'activity-stream-type' => t('The type of the entity in whose stream the activity message appears.'),
-        'activity-message' => t('The full activity message.'),
-        'activity-message-clean' => t('The activity message with no HTML tags. Useful in URLs.'),
-        'activity-message-clean-40' => t('The activity message with no HTML tags, cut off at 40 characters. Useful in URLs.'),
-      ),
-    );
-    return $tokens;
-  }
-
-  // Move into a patch for the Flag module.
   $tokens = array();
   foreach (flag_get_types() as $flag_type) {
     if ($type == $flag_type || $type == 'all') {
@@ -609,27 +292,6 @@ function activity_log_token_list($type = 'all') {
  * Implementation of hook_token_values().
  */
 function activity_log_token_values($type, $object = NULL, $options = array()) {
-  if ($type == 'activity_log') {
-    $event = array_shift($object->events);
-    $keys = array_keys($event->id_map);
-    array_pop($keys); // Remove the "state" key
-    $activity_objects = implode(',', $keys);
-    $message = activity_log_evaluate_record($object);
-    $tokens = array(
-      'activity-id' => $object->mid,
-      'activity-objects' => $activity_objects,
-      'activity-template-id' => $activity->tid,
-      'activity-stream-id' => $object->stream_owner_id,
-      'activity-stream-type' => $object->stream_owner_type,
-      'activity-message' => $message,
-      'activity-message-clean' => strip_tags($message),
-      'activity-message-clean-40' => drupal_substr(strip_tags($message), 0, 40),
-    );
-    $tokens += token_get_date_token_values($object->created, 'last_updated-');
-    return $tokens;
-  }
-
-  // Move into a patch for the Flag module.
   if (in_array($type, flag_get_types())) {
     $values = array();
     $flags = flag_get_flags($type);
@@ -638,145 +300,4 @@ function activity_log_token_values($type, $object = NULL, $options = array()) {
     }
     return $values;
   }
-}
-
-//===========================
-// RADIOACTIVITY INTEGRATION
-//===========================
-
-/**
- * Implementation of hook_radioactivity_info().
- *
- * We have to use "act_log" instead of "activity_log" because the Radioactivity
- * module restricts the "class" column of the {radioactivity} table to 7
- * characters. Issue http://drupal.org/node/1209648
- */
-function activity_log_radioactivity_info() {
-  $rules = rules_get_configured_items();
-  $info = array('sources' => array('act_log' => array()), 'targets' => array('act_log' => array()));
-  $result = db_query("SELECT tid, rule, action_label FROM {activity_log_templates}");
-  while ($template = db_fetch_object($result)) {
-    // The title_placeholder eventually gets run through check_plain().
-    $info['sources']['act_log']['event:'. $template->tid] = array(
-      'title_placeholder' => 'triggered event - '. $rules[$template->rule]['#label'] .' - '. $template->action_label,
-      'description' => 'Energy for an event triggered by the action <em>'. $template->action_label .'</em> in the rule <em>'. $rules[$template->rule]['#label'] .'</em>.',
-    );
-    $info['sources']['act_log']['group:'. $template->tid] = array(
-      'title_placeholder' => 'event added to group - '. $rules[$template->rule]['#label'] .' - '. $template->action_label,
-      'description' => 'Energy for an event triggered by the action <em>'. $template->action_label .'</em> in the rule <em>'. $rules[$template->rule]['#label'] .'</em>. '.
-        'Note that this is <em>instead of (not in addition to)</em> the "triggered event" energy for this action.',
-    );
-  }
-  if (module_exists('fbss_comments')) {
-    $info['sources']['act_log']['fbss_comments'] = array(
-      'title_placeholder' => 'status update - commented',
-      'description' => 'Energy for the activity message about the commented status',
-    );
-  }
-  if (module_exists('flag')) {
-    $types = flag_get_types();
-    foreach ($types as $type) {
-      if (!in_array($type, array('comment', 'fbss_comment'))) {
-        foreach (flag_get_flags($type) as $name => $details) {
-          $info['sources']['act_log']['flag:'. $name] = array(
-            'title_placeholder' => 'flagged - '. $name,
-            'description' => 'Energy for the activity message about the flagged entity',
-          );
-        }
-      }
-    }
-  }
-  return $info;
-}
-
-/**
- * Implementation of hook_activity_log_event().
- */
-function activity_log_activity_log_event($event, $messages, $settings) {
-  if (module_exists('radioactivity')) {
-    module_load_include('inc', 'radioactivity');
-    foreach ($messages as $message) {
-      $aids = array_filter(explode(',', $message->aids));
-      if (count($aids) > 1) {
-        radioactivity_add_energy($message->mid, 'act_log', 'group:'. $message->tid);
-      }
-      else {
-        radioactivity_add_energy($message->mid, 'act_log', 'event:'. $message->tid);
-      }
-    }
-  }
-}
-
-/**
- * Implementation of hook_fbss_comments_after_save().
- */
-function activity_log_fbss_comments_after_save($comment, $edit) {
-  if (module_exists('radioactivity')) {
-    module_load_include('inc', 'radioactivity');
-    $result = db_query("SELECT mid FROM {activity_log_messages} WHERE target_type = 'facebook_status' AND target_id = %d", $comment->sid);
-    while ($message = db_fetch_object($result)) {
-      radioactivity_add_energy($message->mid, 'act_log', 'fbss_comments');
-    }
-  }
-}
-
-/**
- * Implementation of hook_flag().
- */
-function activity_log_flag($event, $flag, $content_id, $account) {
-  if (module_exists('radioactivity')) {
-    if (!in_array($flag->content_type, array('comment', 'fbss_comment'))) {
-      module_load_include('inc', 'radioactivity');
-      $result = db_query("SELECT mid FROM {activity_log_messages} WHERE target_type = '%s' AND target_id = %d", $flag->content_type, $content_id);
-      while ($message = db_fetch_object($result)) {
-        radioactivity_add_energy($message->mid, 'act_log', 'flag:'. $flag->name);
-      }
-    }
-  }
-}
-
-/**
- * Implementation of hook_form_FORM_ID_alter().
- */
-function activity_log_form_radioactivity_admin_profile_form_alter(&$form, $form_state) {
-  if (isset($form['energy']['act_log']['no_sources'])) {
-    $form['energy']['act_log']['no_sources']['#value'] = t('You must create a Rule that logs activity before you can assign energy to activities.');
-  }
-}
-
-//=====================================
-// FACEBOOK-STYLE STATUSES INTEGRATION
-//=====================================
-
-/**
- * Implementation of hook_facebook_status_delete().
- */
-function activity_log_facebook_status_delete($status, $meta = array()) {
-  db_query("
-    DELETE FROM {activity_log_events}
-    WHERE
-      (stream_owner_id = %d AND stream_owner_type = 'facebook_status') OR
-      (target_id = %d AND target_type = 'facebook_status')
-  ", $status->sid, $status->sid);
-  db_query("
-    DELETE FROM {activity_log_messages}
-    WHERE
-      (stream_owner_id = %d AND stream_owner_type = 'facebook_status') OR
-      (target_id = %d AND target_type = 'facebook_status')
-  ", $status->sid, $status->sid);
-}
-
-
-//===================
-// VIEWS INTEGRATION
-//===================
-
-/**
- * Implementation of hook_views_api().
- */
-function activity_log_views_api(){
-  return array(
-    'api' => 2,
-    'path' => drupal_get_path('module', 'activity_log') . '/views',
-  );
 }
