@@ -64,17 +64,21 @@ the template information, we then execute the Rules input evaluators on the
 templates to produce the final rendered message.
 
 To avoid the overhead of rendering the message on every display, we do our best
-to cache the rendered message as intelligently as possible, flushing the cache
-when necessary and making sure all required resources get included. By
-structuring the module this way, we achieve a dynamic activity stream that
-updates to reflect changes in the objects it shows, but we still avoid too much
-overhead from dynamically rendering every message in the stream every time the
-stream is viewed. Additionally, we have managed to put the entire administrator
-interface for setting up what kinds of activity appear in the stream into a
-single, highly-configurable Rules action. The user-facing user interface is
-exposed via Views, which allows for serious flexibility.
+to cache the rendered message as intelligently as possible, selectively
+flushing the cache when necessary and making sure all required resources get
+included. This method achieves a dynamic activity stream that updates to
+reflect changes in the objects it shows, while still avoiding the potential
+performance drain of dynamically rendering every message in the stream every
+time the stream is viewed.
 
-Additional features include the ability for users to specify what kinds of
-activity they want to see in their stream, and Radioactivity integration which
-enables sorting activity streams by what content is interesting and relevant to
-the user.
+Additionally, we have managed to put the entire administrator interface for
+setting up what kinds of activity appear in the stream into a single, highly-
+configurable Rules action. The user-facing user interface is exposed via Views,
+which allows for serious flexibility. Radioactivity integration is also
+provided to allow sorting activity streams by what content is interesting and
+relevant.
+
+Finally, users have the ability to specify what kinds of activity they want to
+see in their stream by editing their profile settings. Administrators can
+choose whether users may or may not disable any given activity type from their
+streams in the Rules action used to record that type of activity.

@@ -384,8 +384,12 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $resources = _activity_log_determine_resources($v['templates'], $v['grouping']['templates'], $v['grouping']['group_summary']);
   foreach ($files as $file) {
     $extension = drupal_substr($file, strrpos($file, '.')+1);
-    $resources[$extension][] = $file;
+    if (file_exists($file)) {
+      $resources[$extension][] = $file;
+    }
   }
+  $resources['css'] = array_unique($resources['css']);
+  $resources['js'] = array_unique($resources['js']);
   // Save the template.
   $record = (object) array(
     'rule' => $rule,
@@ -395,7 +399,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'collapse_method' => $v['grouping']['collapse_method'],
     'pid' => $pid,
     'eval_input' => empty($form_state['element']['#settings']['#eval input']) ? '' : serialize($form_state['element']['#settings']['#eval input']),
-    'resources' => $resources,
+    'resources' => serialize($resources),
     'cacheable' => $v['cache']['cache'] && !_activity_log_has_uncacheable_tokens($v['templates'], $v['grouping']['templates'], $v['grouping']['group_summary']),
   );
   if (!empty($tid)) {
@@ -751,8 +755,7 @@ function activity_log_log_action($settings) {
   $results = array();
   foreach (array('stream_owner', 'viewer') as $type) {
     $results[$type] = array();
-    $temp = $type .'_entity_groups';
-    $groups = $$temp;
+    $groups = $type == 'viewer' ? $viewer_entity_groups : $stream_owner_entity_groups;
     foreach (array_filter($settings['visibility'][$type .'_entity_group']) as $name) {
       $group = $groups[$name];
       if (isset($group['file']) && file_exists($group['file'])) {
@@ -775,10 +778,10 @@ function activity_log_log_action($settings) {
       if (isset($group['additional arguments'])) {
         $args = array_merge($args, $group['additional arguments']);
       }
-      $results[$type] = array_merge_recursive($results[$type], call_user_func_array($group['items callback'], $args));
+      $results[$type] = array_merge_recursive($results[$type], (array) call_user_func_array($group['items callback'], $args));
     }
   }
-  $owners = $results['stream_owner'];
+  $owners = array_unique($results['stream_owner']);
   $viewers = array_unique($results['viewer']['user']);
   // If "everyone" is a valid viewer, we don't need to save records for specific users.
   if (in_array(0, $viewers)) {
@@ -799,7 +802,9 @@ function activity_log_log_action($settings) {
       $or[] = "(stream_owner_type = '%s' AND stream_owner_id IN (". db_placeholders($ids) ."))";
       $args = array_merge($args, array($type), $ids);
     }
-    $where[] = "(". implode(" OR ", $or) .")";
+    if (!empty($or)) {
+      $where[] = "(". implode(" OR ", $or) .")";
+    }
     if ($group_method == 'target_action') {
       $where[] = "target_id = %d"; // filter by target entity
       $where[] = "target_type = '%s'";

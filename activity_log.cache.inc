@@ -27,25 +27,17 @@ function _activity_log_update_related($id, $type, $extra_where = array(), $extra
     $query .= " OR $clause";
   }
   $result = db_query($query, array_merge($args, $extra_args));
-  $query = "UPDATE {activity_log_messages} SET cached = '', ";
-  $set = $where = $args = $aids = array();
+  $query = "UPDATE {activity_log_messages} SET cached = ''";
+  $where = array("(stream_owner_id = %d AND stream_owner_type = '%s')");
+  $args = array($id, $type);
   while ($row = db_fetch_object($result)) {
-    $set[] = "aids = REPLACE(aids, '%s', ',')";
-    $args[] = ",$row->aid,";
     $where[] = "aids LIKE '%%,%d,%%'";
-    $aids[] = $row->aid;
+    $args[] = $row->aid;
   }
   if (!empty($where)) {
-    $query .= implode(", ", $set);
-    $query .= " WHERE ";
-    $query .= implode(" OR ", $where);
-    db_query($query, array_merge($args, $aids));
+    $query .= " WHERE ". implode(" OR ", $where);
+    db_query($query, $args);
   }
-  db_query("
-    UPDATE {activity_log_messages}
-    SET cached = ''
-    WHERE (stream_owner_id = %d AND stream_owner_type = '%s') OR aids = ','
-  ", $id, $type);
 }
 
 /**

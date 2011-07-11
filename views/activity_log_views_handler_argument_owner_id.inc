@@ -18,24 +18,24 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
     return $options;
   }
   function options_form(&$form, &$form_state) {
-    $options = parent::options_form($form, $form_state);
+    parent::options_form($form, $form_state);
     $opt = array();
     if (module_exists('og')) {
       $opt['og'] = t("The argument user's Organic Groups");
     }
     if (module_exists('user_relationships_api')) {
       $opt['ur'] = t("The argument user's relationships");
-      $ur_types = user_relationships_types_load();
-      foreach ($ur_types as $type) {
+      foreach (user_relationships_types_load() as $type) {
         $opt['ur-'. $type->rtid] = t("The argument user's %type relationships", array('%type' => $type->name));
       }
     }
     if (!empty($opt)) {
       $form['include'] = array(
         '#title' => t('Include activity for'),
+        '#description' => t('Include activity on this view from other streams.'),
         '#type'  => 'checkboxes',
         '#options' => $opt,
-        '#default_value' => $options['include'],
+        '#default_value' => $this->options['include'],
       );
     }
   }
@@ -45,7 +45,6 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
       parent::query();
       return;
     }
-    static $ur_types = user_relationships_types_load();
     $this->ensure_my_table();
     if (!empty($this->options['break_phrase'])) {
       views_break_phrase($this->argument, $this);
@@ -76,7 +75,7 @@ class activity_log_views_handler_argument_owner_id extends views_handler_argumen
         $query_args = array_merge($query_args, $args, $args);
       }
       else {
-        foreach ($ur_types as $type) {
+        foreach (user_relationships_types_load() as $type) {
           if (in_array('ur-'. $type->rtid, $options)) {
             $subquery[] = db_prefix_tables("$this->table_alias.$this->real_field IN (". _activity_log_get_ur_query($operator, $placeholders, $type->rtid) .")");
             $query_args = array_merge($query_args, $args, $args, array($type->rtid));
