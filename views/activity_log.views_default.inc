@@ -113,6 +113,10 @@ function activity_log_views_default_views() {
       'validate_fail' => 'not found',
       'break_phrase' => 0,
       'not' => 0,
+      'include' => array(
+        'og' => 'og',
+        'ur' => 'ur',
+      ),
       'id' => 'stream_owner_id',
       'table' => 'activity_log_messages',
       'field' => 'stream_owner_id',
