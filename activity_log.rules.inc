@@ -388,8 +388,8 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
       $resources[$extension][] = $file;
     }
   }
-  $resources['css'] = array_unique($resources['css']);
-  $resources['js'] = array_unique($resources['js']);
+  $resources['css'] = empty($resources['css']) ? array() : array_unique($resources['css']);
+  $resources['js'] = empty($resources['js']) ? array() : array_unique($resources['js']);
   // Save the template.
   $record = (object) array(
     'rule' => $rule,
