@@ -781,7 +781,10 @@ function activity_log_log_action($settings) {
       $results[$type] = array_merge_recursive($results[$type], (array) call_user_func_array($group['items callback'], $args));
     }
   }
-  $owners = array_unique($results['stream_owner']);
+  foreach ($results['stream_owner'] as $owner_type => $ids) {
+    $results['stream_owner'][$owner_type] = array_unique($ids);
+  }
+  $owners = $results['stream_owner'];
   $viewers = array_unique($results['viewer']['user']);
   // If "everyone" is a valid viewer, we don't need to save records for specific users.
   if (in_array(0, $viewers)) {
