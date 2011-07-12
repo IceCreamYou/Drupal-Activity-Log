@@ -381,27 +381,28 @@ function _activity_log_get_active_group_members() {
  *   An array of UIDs of the given user's relationships.
  */
 function _activity_log_get_user_relationships($uid, $rtid = 0) {
-  if (!$rtid) {
-    $result = db_query("
-      SELECT ur.requester_id, ur.requestee_id
-      FROM user_relationships ur
-      INNER JOIN user_relationship_types urt
-        ON ur.rtid = urt.rtid
-      WHERE (ur.requester_id = %d OR ur.requestee_id = %d) AND (ur.approved = 1 OR urt.is_oneway = 0)
-    ", $uid, $uid);
-  }
-  else {
-    $result = db_query("
-      SELECT ur.requester_id, ur.requestee_id
-      FROM user_relationships ur
-      INNER JOIN user_relationship_types urt
-        ON ur.rtid = urt.rtid
-      WHERE (ur.requester_id = %d OR ur.requestee_id = %d) AND (ur.approved = 1 OR urt.is_oneway = 0) AND ur.rtid = %d
-    ", $uid, $uid, $rtid);
+  $query = "
+    SELECT ur.requester_id, ur.requestee_id, urt.is_oneway
+    FROM user_relationships ur
+    INNER JOIN user_relationship_types urt
+      ON ur.rtid = urt.rtid
+    WHERE (ur.requester_id = %d OR ur.requestee_id = %d) AND (ur.approved = 1 OR urt.is_oneway = 0)
+  ";
+  $args = array($uid, $uid);
+  if ($rtid) {
+    $query .= " AND ur.rtid = %d";
+    $args[] = $rtid;
   }
   $uids = array();
   while ($rel = db_fetch_object($result)) {
-    $uids[] = ($rel->requester_id == $uid) ? $rel->requestee_id : $rel->requester_id;
+    if ($rel->is_oneway) {
+      if ($rel->requester_id != $uid) {
+        $uids[] = $rel->requester_id;
+      }
+    }
+    else {
+      $uids[] = ($rel->requester_id == $uid) ? $rel->requestee_id : $rel->requester_id;
+    }
   }
   return $uids;
 }
