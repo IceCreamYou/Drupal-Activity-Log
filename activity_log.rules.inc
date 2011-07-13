@@ -174,6 +174,7 @@ function activity_log_log_action_form($settings, &$form) {
     );
   }
   $groups = module_invoke_all('activity_log_entity_groups');
+  uasort($groups, 'activity_log_element_sort');
   $options = array();
   $expose_fields = array();
   foreach ($groups as $name => $group) {
@@ -182,7 +183,6 @@ function activity_log_log_action_form($settings, &$form) {
       $expose_fields[$name] = $group['expose fields'];
     }
   }
-  uasort($options, 'activity_log_element_sort');
   drupal_add_js(array('activity_log' => array('stream_owner_expose_fields' => $expose_fields)), 'setting');
   $form['settings']['visibility'] = array(
     '#type' => 'fieldset',
@@ -215,6 +215,7 @@ function activity_log_log_action_form($settings, &$form) {
     '#options' => activity_log_get_rules_data_types(),
   );
   $groups = module_invoke_all('activity_log_entity_groups', FALSE);
+  uasort($groups, 'activity_log_element_sort');
   $options = array();
   $expose_fields = array();
   foreach ($groups as $name => $group) {
@@ -223,7 +224,6 @@ function activity_log_log_action_form($settings, &$form) {
       $expose_fields[$name] = $group['expose fields'];
     }
   }
-  uasort($options, 'activity_log_element_sort');
   drupal_add_js(array('activity_log' => array('viewer_expose_fields' => $expose_fields)), 'setting');
   $form['settings']['visibility']['viewer_entity_group'] = array(
     '#type' => 'checkboxes',
