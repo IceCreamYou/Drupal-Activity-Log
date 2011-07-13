@@ -202,7 +202,7 @@ function activity_log_schema() {
       ),
       'viewer_id' => array(
         'type' => 'int',
-        'unsigned' => TRUE,
+        'unsigned' => FALSE, // Negative numbers are flags. Range -/+ 2,147,483,647
         'not null' => TRUE,
         'default' => 0,
         'description' => 'The ID of the user to whom this message will appear.',

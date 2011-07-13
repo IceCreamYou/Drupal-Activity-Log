@@ -152,6 +152,18 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       'title' => t('Everyone'),
       'weight' => -105,
     );
+    $groups['everyone_except_active'] = array(
+      'items callback' => 'activity_log_eg_everyone_except_active',
+      'title' => t('Everyone except the active user'),
+      'expose fields' => array('acting_uid'),
+      'weight' => -103,
+    );
+    $groups['everyone_except_custom'] = array(
+      'items callback' => 'activity_log_eg_everyone_except_custom',
+      'title' => t('Everyone except a custom user'),
+      'expose fields' => array('id'),
+      'weight' => -102,
+    );
   }
   return $groups;
 }
@@ -384,6 +396,26 @@ function activity_log_eg_everyone($event, $settings) {
     return array('user' => _activity_log_get_active_group_members());
   }
   return array('user' => array(0));
+}
+
+/**
+ * Returns the ID for the "everyone except the active user" group.
+ */
+function activity_log_eg_everyone_except_active($event, $settings, $acting_uid) {
+  if (module_exists('og') && og_get_group_context()->og_private) {
+    return array('user' => array_diff(_activity_log_get_active_group_members(), array($acting_uid)));
+  }
+  return array('user' => array(-$acting_uid));
+}
+
+/**
+ * Returns the ID for the "everyone except a custom user" group.
+ */
+function activity_log_eg_everyone_except_custom($event, $settings, $id) {
+  if (module_exists('og') && og_get_group_context()->og_private) {
+    return array('user' => array_diff(_activity_log_get_active_group_members(), array($id)));
+  }
+  return array('user' => array(-$id));
 }
 
 /**
