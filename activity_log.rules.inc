@@ -264,6 +264,7 @@ function activity_log_log_action_form($settings, &$form) {
     '#rows' => 2,
     '#disabled' => user_access('administer loading arbitrary CSS and JS files for cached messages'),
   );
+  $form['#old_resources'] = $settings['cache']['resources'];
   $form['settings']['acting_uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Acting user'),
@@ -291,6 +292,11 @@ function activity_log_log_action_validate($form, $form_state) {
       if (empty($v['group_max'])) {
         form_set_error('settings][grouping][group_max', t('You must enter a maximum number of items allowed in a grouped message if you do not group by the target entity.'));
       }
+    }
+  }
+  if (!user_access('administer loading arbitrary CSS and JS files for cached messages')) {
+    if ($form_state['values']['settings']['cache']['resources'] != $form['#old_resources']) {
+      form_set_error('settings][cache][resources', t('Invalid submission detected: you do not have permission to edit the CSS and JS files that must be loaded with this activity.'));
     }
   }
 }
