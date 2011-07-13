@@ -296,6 +296,44 @@ function activity_log_schema() {
  */
 function activity_log_install() {
   drupal_install_schema('activity_log');
+
+  if (db_table_exists('heartbeat_activity')) {
+    db_query("INSERT INTO activity_log_templates SET tid = 0, cacheable = 1");
+    db_query("
+      INSERT INTO activity_log_messages
+        (tid, created, last_updated, stream_owner_id, stream_owner_type, cached)
+      SELECT 0, timestamp, timestamp, uid, 'user', message
+      FROM heartbeat_activity
+      WHERE nid = 0
+    ");
+    db_query("
+      INSERT INTO activity_log_messages
+        (tid, created, last_updated, stream_owner_id, stream_owner_type, cached)
+      SELECT 0, timestamp, timestamp, nid, 'node', message
+      FROM heartbeat_activity
+      WHERE nid <> 0
+    ");
+    drupal_set_message(st('Heartbeat activity has been ported to Activity Log.') .' '.
+      st('You can now uninstall the Heartbeat module.'));
+  }
+  if (db_table_exists('activity_messages')) {
+    db_query("INSERT IGNORE INTO activity_log_templates SET tid = 0, cacheable = 1");
+    db_query("
+      INSERT INTO activity_log_messages
+        (tid, created, last_updated, stream_owner_id, stream_owner_type, viewer_id, cached)
+      SELECT 0, created, created, value, 'user', at.uid, message
+      FROM activity_access aa
+      LEFT JOIN activity a
+        ON aa.aid = a.aid
+      LEFT JOIN activity_targets at
+        ON aa.aid = at.aid
+      LEFT JOIN activity_messages am
+        ON at.amid = am.amid
+    ");
+    drupal_set_message(st('Activity has been ported to Activity Log.') .' '.
+      st('You can now uninstall the Activity module.'));
+  }
+
   drupal_set_message(st('The Activity Log module was successfully installed.') .' '.
     st('To begin recording activity messages, <a href="@rules">create a Rule</a> that executes the "Log Activity" action.', array('@rules' => url('admin/rules/trigger')))
   );
