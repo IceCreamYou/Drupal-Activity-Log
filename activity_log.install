@@ -345,6 +345,7 @@ function activity_log_install() {
 function activity_log_uninstall() {
   drupal_uninstall_schema('activity_log');
   variable_del('activity_log_max_age');
+  variable_del('activity_log_comments_bump');
   if (db_table_exists('radioactivity')) {
     db_query("DELETE FROM {radioactivity} WHERE class='act_log'");
   }

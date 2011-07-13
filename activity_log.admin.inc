@@ -24,7 +24,18 @@ function activity_log_admin($form_state) {
     '#maxlength' => 6,
     '#size' => 4,
   );
-  $form['clear_cache'] = array(
+  $options = array('node' => t('Node messages when someone comments on the relevant node'));
+  if (module_exists('fbss_comments')) {
+    $options['status'] = t('Status messages when someone comments on the relevant status');
+  }
+  $form['activity_log_comments_bump'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Bump to the top of the stream'),
+    '#description' => t('Bump activity messages to the top of activity streams when someone comments on the relevant entities.'),
+    '#options' => $options,
+    '#default_value' => variable_get('activity_log_comments_bump', array('status' => 'status')),
+  );
+  $form['activity_log_clear_cache'] = array(
     '#type' => 'submit',
     '#value' => t('Clear all message caches'),
     '#submit' => array('activity_log_admin_clear_caches'),
