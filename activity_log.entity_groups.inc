@@ -160,6 +160,12 @@ function activity_log_entity_groups($stream_owner = TRUE) {
  * Returns the entitity IDs for the Custom group.
  */
 function activity_log_eg_custom($event, $settings, $id, $type = 'user') {
+  if ($type == 'user' && module_exists('og') && og_get_group_context()->og_private) {
+    $members = _activity_log_get_active_group_members();
+    if (!in_array($id, $members)) {
+      return;
+    }
+  }
   return array($type => array($id));
 }
 
@@ -203,7 +209,12 @@ function activity_log_eg_active_groups_members($event, $settings) {
  */
 function activity_log_eg_acting_user_rels($event, $settings, $acting_uid) {
   if (module_exists('user_relationships_api')) {
-    return array('user' => _activity_log_get_user_relationships($acting_uid));
+    $rels = _activity_log_get_user_relationships($acting_uid);
+    if (module_exists('og') && og_get_group_context()->og_private) {
+      $members = _activity_log_get_active_group_members();
+      $rels = array_intersect($rels, $members);
+    }
+    return array('user' => $rels);
   }
 }
 
@@ -212,7 +223,12 @@ function activity_log_eg_acting_user_rels($event, $settings, $acting_uid) {
  */
 function activity_log_eg_custom_user_rels($event, $settings, $id) {
   if (module_exists('user_relationships_api')) {
-    return array('user' => _activity_log_get_user_relationships($id));
+    $rels = _activity_log_get_user_relationships($id);
+    if (module_exists('og') && og_get_group_context()->og_private) {
+      $members = _activity_log_get_active_group_members();
+      $rels = array_intersect($rels, $members);
+    }
+    return array('user' => $rels);
   }
 }
 
@@ -221,7 +237,12 @@ function activity_log_eg_custom_user_rels($event, $settings, $id) {
  */
 function activity_log_eg_acting_user_rels_type($event, $settings, $acting_uid, $ur_type) {
   if (module_exists('user_relationships_api')) {
-    return array('user' => _activity_log_get_user_relationships($acting_uid, $ur_type->rtid));
+    $rels = _activity_log_get_user_relationships($acting_uid, $ur_type->rtid);
+    if (module_exists('og') && og_get_group_context()->og_private) {
+      $members = _activity_log_get_active_group_members();
+      $rels = array_intersect($rels, $members);
+    }
+    return array('user' => $rels);
   }
 }
 
@@ -230,7 +251,12 @@ function activity_log_eg_acting_user_rels_type($event, $settings, $acting_uid, $
  */
 function activity_log_eg_custom_user_rels_type($event, $settings, $id, $ur_type) {
   if (module_exists('user_relationships_api')) {
-    return array('user' => _activity_log_get_user_relationships($id, $ur_type->rtid));
+    $rels = _activity_log_get_user_relationships($id, $ur_type->rtid);
+    if (module_exists('og') && og_get_group_context()->og_private) {
+      $members = _activity_log_get_active_group_members();
+      $rels = array_intersect($rels, $members);
+    }
+    return array('user' => $rels);
   }
 }
 
@@ -354,6 +380,9 @@ function activity_log_eg_node_terms($event, $settings) {
  * Returns the entitity IDs for the Everyone group.
  */
 function activity_log_eg_everyone($event, $settings) {
+  if (module_exists('og') && og_get_group_context()->og_private) {
+    return array('user' => _activity_log_get_active_group_members());
+  }
   return array('user' => array(0));
 }
 
