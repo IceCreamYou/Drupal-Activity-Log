@@ -168,7 +168,8 @@ function activity_log_log_action_form($settings, &$form) {
       '#description' => '<p>'. t('The format of the grouped message.') .' '.
         t('The token <em>[names]</em> will be replaced with the names of the users who took this action.') .' '.
         '<span class="activity-log-admin-description">'.
-          t('Additionally, the token <em>[collection]</em> will be replaced with summaries of the target objects formatted according to the "Grouped item name" setting above.')
+          t('Additionally, the token <em>[collection]</em> will be replaced with summaries of the target objects formatted according to the "Grouped item name" setting above,') .' '.
+          t('and the token <em>[count]</em> will be replaced with the number of items in this summary.')
         .'</span> '.
         t('For example, the template "[names] like the [node:type] [node:title]" might produce something like "Jack and Jill like the page Slippery Slopes."') .'</p>',
     );

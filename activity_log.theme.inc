@@ -211,11 +211,13 @@ function activity_log_evaluate_record($record) {
   if (count($record->events) === 1) {
     return $template;
   }
+  $collection = array_unique($collection);
   return str_replace(
-    array('[names]', '[collection]'),
+    array('[names]', '[collection]', '[count]'),
     array(
       theme('activity_log_collapse', array_unique($names)),
-      theme('activity_log_collapse', array_unique($collection), $record->collapse_method)
+      theme('activity_log_collapse', $collection, $record->collapse_method),
+      count($collection)
     ),
     $group_template
   );
