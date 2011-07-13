@@ -314,17 +314,7 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
         array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_eval_after');
       }
       else {
-        // Get the language templates.
-        $templates = array();
-        $group_templates = array();
-        foreach ($form['settings']['templates'] as $lang => $info) {
-          if (strpos($lang, '#') !== 0) {
-            $templates[$lang] = array('template' => $info['template']['#default_value']);
-            $group_templates[$lang] = array('template' => $form['settings']['grouping']['templates'][$lang]['template']['#default_value']);
-          }
-        }
-        $form['#old_templates'] = serialize($templates);
-        $form['#old_group_templates'] = serialize($templates);
+        $form['#tid'] = $form_state['element']['#settings']['tid'];
       }
       array_push($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_label_after');
       // Undo the prefix we added so the input evaluator knows this is the placeholder.
@@ -355,20 +345,15 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $rule = $form_state['proxy']->_rule_name;
   $pid = 0;
   $name = new stdClass();
-  if (!empty($form['#old_templates'])) {
-    $tid = db_result(db_query("
-      SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
-    ", $rule, $form['#old_templates'], $form['#old_group_templates']));
-    if (!empty($tid)) {
+  if (!empty($form['#tid'])) {
       $name = db_fetch_object(db_query("
         SELECT n.*
         FROM {activity_log_templates} t
         LEFT JOIN {activity_log_action_names} n
           ON t.pid = n.pid
         WHERE tid = %d
-      ", $tid));
+      ", $form['#tid']));
       $pid = $name->pid;
-    }
   }
   // If this is a new action or we changed the public name, check if the new name exists. If it doesn't, save the new value.
   if (empty($name) || $name->public_name != $v['public_name']) {
@@ -402,8 +387,8 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     'resources' => serialize($resources),
     'cacheable' => $v['cache']['cache'] && !_activity_log_has_uncacheable_tokens($v['templates'], $v['grouping']['templates'], $v['grouping']['group_summary']),
   );
-  if (!empty($tid)) {
-    $record->tid = $tid;
+  if (!empty($form['#tid'])) {
+    $record->tid = $form['#tid'];
     drupal_write_record('activity_log_templates', $record, array('tid'));
   }
   else {
@@ -466,26 +451,10 @@ function activity_log_rules_admin_form_submit_label_after($form, $form_state) {
  */
 function activity_log_rules_admin_form_delete($form, $form_state) {
   if (!empty($form['#parameters'][3])) {
-    $v = $form['#parameters'][3]['#settings'];
-    // Get the language templates.
-    $templates = array();
-    $group_templates = array();
-    foreach ($v['templates'] as $lang => $info) {
-      $templates[$lang] = array('template' => $info['template']);
-      $group_templates[$lang] = array('template' => $v['grouping']['templates'][$lang]['template']);
-    }
-    $templates = serialize($templates);
-    $group_templates = serialize($templates);
-    $rule = $form_state['proxy']->_rule_name;
-    db_query("
-      DELETE FROM {activity_log_events} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s')
-    ", $rule, $templates, $group_templates);
-    db_query("
-      DELETE FROM {activity_log_messages} WHERE tid IN (SELECT tid FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s')
-    ", $rule, $templates, $group_templates);
-    db_query("
-      DELETE FROM {activity_log_templates} WHERE rule = '%s' AND template = '%s' AND group_template = '%s'
-    ", $rule, $templates, $group_templates);
+    $tid = $form['#parameters'][3]['#settings']['tid'];
+    db_query("DELETE FROM {activity_log_messages} WHERE tid = %d", $tid);
+    db_query("DELETE FROM {activity_log_events} WHERE tid = %d", $tid);
+    db_query("DELETE FROM {activity_log_templates} WHERE tid = %d", $tid);
   }
 }
 
