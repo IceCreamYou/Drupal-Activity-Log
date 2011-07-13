@@ -115,6 +115,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['node commenters'] = array(
       'items callback' => 'activity_log_eg_node_commenters',
       'title' => t('Other people who have commented on this node (including the node author)'),
+      'data types' => array('node'),
       'weight' => -35,
     );
   }
@@ -122,6 +123,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['node terms'] = array(
       'items callback' => 'activity_log_eg_node_terms',
       'title' => t('The taxonomy terms used in a node'),
+      'data types' => array('node'),
       'weight' => -30,
     );
   }
@@ -129,6 +131,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['status commenters'] = array(
       'items callback' => 'activity_log_eg_status_commenters',
       'title' => t('Other people who have commented on this status (including the sender)'),
+      'data types' => array('fbss_comment'),
       'weight' => -25,
     );
   }
@@ -136,11 +139,13 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     $groups['mentioned users'] = array(
       'items callback' => 'activity_log_eg_mentioned_users',
       'title' => t('The users @mentioned in a status'),
+      'data types' => array('facebook_status'),
       'weight' => -20,
     );
     $groups['hashtag terms'] = array(
       'items callback' => 'activity_log_eg_hashtag_terms',
       'title' => t('The taxonomy terms corresponding to the #hashtags in a status'),
+      'data types' => array('facebook_status'),
       'weight' => -15,
     );
   }

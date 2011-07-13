@@ -81,6 +81,11 @@ function hook_activity_log_event($event, $group, $settings) {
  *     array().
  *   - additional arguments: (Optional) Extra arguments to pass to the items
  *     callback.
+ *   - data types: (Optional) An array containing names of Rules data types for
+ *     which this group is valid. If not specified, this group is assumed to be
+ *     valid for all Rules data types. Valid data types that can be specified
+ *     here include anything returned by
+ *     activity_log_get_rules_data_types(array('stream owner types' => 'all)).
  *   - file: (Optional) The file where the items callback exists.
  */
 function hook_activity_log_entity_groups($stream_owner = TRUE) {

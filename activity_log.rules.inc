@@ -315,6 +315,21 @@ function activity_log_log_action_validate($form, $form_state) {
 function activity_log_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'rules_admin_form_edit' || $form_id == 'rules_admin_form_add') {
     if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
+      // Hide stream owner / viewer entity groups that are not applicable to this rule.
+      $rules = _rules_get_rule_sets();
+      $stream_owner_groups = module_invoke_all('activity_log_entity_groups');
+      $viewer_groups = module_invoke_all('activity_log_entity_groups', FALSE);
+      foreach ($rules[$form_state['proxy']->_rule['#set']]['info']['arguments'] as $key => $info) {
+        foreach (array('stream_owner', 'viewer') as $type) {
+          $options = array();
+          foreach ($form['settings']['visibility'][$type .'_entity_group']['#options'] as $callback => $name) {
+            if (!isset($stream_owner_groups[$callback]['data types']) || in_array($info['type'], $stream_owner_groups[$callback]['data types'])) {
+              $options[$callback] = $name;
+            }
+          }
+          $form['settings']['visibility'][$type .'_entity_group']['#options'] = $options;
+        }
+      }
       // Run our custom submit hooks.
       array_unshift($form['submit']['#submit'], 'activity_log_rules_admin_form_submit_before');
       if ($form_id == 'rules_admin_form_add') {
