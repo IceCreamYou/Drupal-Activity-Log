@@ -128,7 +128,7 @@ function activity_log_entity_groups($stream_owner = TRUE) {
   if ($fc) {
     $groups['status commenters'] = array(
       'items callback' => 'activity_log_eg_status_commenters',
-      'title' => t('Other people who have commented on this status (including the sender and recipient)'),
+      'title' => t('Other people who have commented on this status (including the sender)'),
       'weight' => -25,
     );
   }
@@ -302,8 +302,8 @@ function activity_log_eg_node_commenters($event, $settings) {
  */
 function activity_log_eg_status_commenters($event, $settings) {
   if ($event->target_type == 'facebook_status' && module_exists('facebook_status')) {
-    $status = db_fetch_object(db_query("SELECT sender, recipient FROM {facebook_status} WHERE sid = %d", $event->target_id));
-    $uids = array($status->sender, $status->recipient);
+    $status = db_fetch_object(db_query("SELECT sender FROM {facebook_status} WHERE sid = %d", $event->target_id));
+    $uids = array($status->sender);
     $result = db_query("SELECT uid FROM {fbss_comments} WHERE uid <> 0 AND sid = %d", $event->target_id);
     while ($account = db_fetch_object($result)) {
       $uids[] = $account->uid;
