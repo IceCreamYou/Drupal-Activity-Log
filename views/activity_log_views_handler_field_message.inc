@@ -52,6 +52,7 @@ class activity_log_views_handler_field_message extends views_handler_field {
     }
     $record->eval_input = unserialize($record->eval_input);
     $record->resources = unserialize($record->resources);
+    $record->cached = empty($record->cached) ? '' : unserialize($record->cached);
     $record->aids = array_filter(explode(',', $record->aids));
     $record->events = array();
     if (!empty($record->aids)) {

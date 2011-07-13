@@ -20,7 +20,8 @@
  *   The themed activity message.
  */
 function theme_activity_log_item($record, $reset = FALSE) {
-  if ($reset || empty($record->cached) || empty($record->cacheable)) {
+  static $user_lang = user_preferred_language($GLOBALS['user'])->language;
+  if ($reset || empty($record->cacheable) || empty($record->cached) || empty($record->cached[$user_lang])) {
     if (empty($record->template)) {
       // If we can't find the template, make sure we have all of them available.
       _activity_log_rebuild_templates();
@@ -37,7 +38,8 @@ function theme_activity_log_item($record, $reset = FALSE) {
       $classes[] = 'activity-message-grouped';
     }
     $message = '<div id="activity-log-item-'. $record->mid .'" class="activity-log-message '. implode(' ', $classes) .'">'. activity_log_evaluate_record($record) .'</div>';
-    db_query("UPDATE {activity_log_messages} SET cached = '%s' WHERE mid = %d", $message, $record->mid);
+    $record->cached[$user_lang] = $message;
+    db_query("UPDATE {activity_log_messages} SET cached = '%s' WHERE mid = %d", serialize($record->cached), $record->mid);
     return $message;
   }
   else {
