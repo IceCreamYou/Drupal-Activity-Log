@@ -302,6 +302,7 @@ function _activity_log_rebuild_templates() {
       VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', %d)
     ", $record);
   }
+  return count($rules);
 }
 
 //=====================

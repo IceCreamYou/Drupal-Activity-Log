@@ -334,8 +334,18 @@ function activity_log_install() {
       st('You can now uninstall the Activity module.'));
   }
 
-  drupal_set_message(st('The Activity Log module was successfully installed.') .' '.
-    st('To begin recording activity messages, <a href="@rules">create a Rule</a> that executes the "Log Activity" action.', array('@rules' => url('admin/rules/trigger')))
+  if (function_exists('_activity_log_rebuild_templates')) {
+    $default_rule_count = _activity_log_rebuild_templates();
+    if ($default_rule_count) {
+      drupal_set_message(st('Finished building !count default Activity Log templates.', array('!count' => $default_rule_count)));
+    }
+  }
+
+  drupal_set_message(st('The Activity Log module has finished installing.') .' '.
+    empty($default_rule_count) ?
+    st('To begin recording activity messages, <a href="@rules">create a Rule</a> that executes the "Log Activity" action.',
+      array('@rules' => url('admin/rules/trigger'))
+    ) : ''
   );
 }
 
