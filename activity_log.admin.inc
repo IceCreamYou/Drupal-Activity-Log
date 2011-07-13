@@ -24,5 +24,20 @@ function activity_log_admin($form_state) {
     '#maxlength' => 6,
     '#size' => 4,
   );
+  $form['clear_cache'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear all message caches'),
+    '#submit' => array('activity_log_admin_clear_caches'),
+    '#description' => t('Clear all activity message caches.') .' '.
+      t('<strong>Warning:</strong> viewing activity messages will be slow after this until the cache is rebuilt.'),
+  );
   return system_settings_form($form);
+}
+
+/**
+ * Submit callback for the "clear caches" button.
+ */
+function activity_log_admin_clear_caches() {
+  drupal_set_message(t('Message caches cleared.'));
+  activity_log_clear_message_cache();
 }

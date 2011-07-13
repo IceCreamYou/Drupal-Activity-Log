@@ -238,11 +238,11 @@ function activity_log_element_sort($a, $b) {
  *   caches are cleared.
  */
 function activity_log_clear_message_cache($mid = NULL) {
-  if (empty($mid)) {
-    db_query("UPDATE {activity_log_messages} SET cache = '' WHERE mid = %d", $mid);
+  if (!empty($mid)) {
+    db_query("UPDATE {activity_log_messages} SET cached = '' WHERE mid = %d", $mid);
   }
   else {
-    db_query("UPDATE {activity_log_messages} SET cache = ''");
+    db_query("UPDATE {activity_log_messages} SET cached = ''");
   }
 }
 
