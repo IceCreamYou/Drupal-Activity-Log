@@ -20,7 +20,7 @@
  *   The themed activity message.
  */
 function theme_activity_log_item($record, $reset = FALSE) {
-  if ($reset || empty($record->cacheable)) {
+  if ($reset || empty($record->cached) || empty($record->cacheable)) {
     if (empty($record->template)) {
       // If we can't find the template, make sure we have all of them available.
       _activity_log_rebuild_templates();
