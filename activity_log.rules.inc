@@ -365,16 +365,7 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     }
   }
   // Determine the resources that need to be loaded for cached messages.
-  $files = explode("\n", $v['cache']['resources']);
-  $resources = _activity_log_determine_resources($v['templates'], $v['grouping']['templates'], $v['grouping']['group_summary']);
-  foreach ($files as $file) {
-    $extension = drupal_substr($file, strrpos($file, '.')+1);
-    if (file_exists($file)) {
-      $resources[$extension][] = $file;
-    }
-  }
-  $resources['css'] = empty($resources['css']) ? array() : array_unique($resources['css']);
-  $resources['js'] = empty($resources['js']) ? array() : array_unique($resources['js']);
+  $resources = _activity_log_determine_resources($v['templates'], $v['grouping']['templates'], $v['grouping']['group_summary'], $v['cache']['resources']);
   // Save the template.
   $record = (object) array(
     'rule' => $rule,
@@ -475,11 +466,22 @@ function activity_log_autocomplete_public_name($string = '') {
 /**
  * Determines which CSS and JS resources are required for a template.
  */
-function _activity_log_determine_resources($templates, $group_templates, $group_summary) {
+function _activity_log_determine_resources($templates, $group_templates, $group_summary, $extra) {
   $resources = array();
   foreach (module_invoke_all('activity_log_token_resources') as $token => $sources) {
     if (_activity_log_has_token($token, $templates, $group_templates, $group_summary)) {
       $resources = array_merge_recursive($resources, $sources);
+    }
+  }
+  // Determine the resources that need to be loaded for cached messages.
+  $files = explode("\n", $extra);
+  foreach ($files as $file) {
+    $extension = drupal_substr($file, strrpos($file, '.')+1);
+    if (file_exists($file)) {
+      if (!isset($resources[$extension])) {
+        $resources[$extension] = array();
+      }
+      $resources[$extension][] = $file;
     }
   }
   return $resources;
