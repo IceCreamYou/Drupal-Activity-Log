@@ -10,6 +10,7 @@
  */
 function activity_log_views_query_alter(&$view, &$query) {
   if ($query->base_table == 'activity_log_messages') {
+    drupal_add_css(drupal_get_path('module', 'activity_log') .'/activity_log.css');
     global $user;
     $query->ensure_table('activity_log_templates');
     // Don't show disabled activity types.
