@@ -26,6 +26,21 @@ function activity_log_menu() {
     'description' => 'Allows administrators to adjust settings for Activity Log.',
     'file' => 'activity_log.admin.inc',
   );
+  $items['admin/settings/activity_log'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'weight' => -1,
+  );
+  $items['admin/settings/activity_log/regenerate'] = array(
+    'title' => 'Regenerate activity',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('activity_log_admin_regenerate'),
+    'access arguments' => array('administer site configuration'),
+    'description' => 'Allows administrators to regenerate activity for Activity Log.',
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'activity_log.admin.inc',
+  );
   $items['activity_log/autocomplete/public_name'] = array(
     'title' => 'Autocomplete Activity Log Public Name',
     'page callback' => 'activity_log_autocomplete_public_name',
