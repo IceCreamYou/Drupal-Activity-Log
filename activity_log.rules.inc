@@ -841,6 +841,15 @@ function activity_log_log_action($settings) {
     foreach ($owners as $type => $ids) {
       foreach (array_unique($ids) as $id) {
         foreach ($viewers as $viewer) {
+          if (!is_numeric($viewer) && $type != 'user') {
+            continue;
+          }
+          elseif ($viewer == 'stream owner') {
+            $viewer = $id;
+          }
+          elseif ($viewer == 'not stream owner') {
+            $viewer = -$id;
+          }
           $message = (object) array(
             'tid' => $event->tid,
             'aids' => ','. $event->aid .',',

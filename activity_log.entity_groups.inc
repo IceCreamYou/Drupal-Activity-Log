@@ -174,6 +174,16 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       'expose fields' => array('id'),
       'weight' => -102,
     );
+    $groups['stream_owner'] = array(
+      'items callback' => 'activity_log_eg_stream_owner',
+      'title' => t('The user in whose stream the activity will appear'),
+      'weight' => -88,
+    );
+    $groups['not_stream_owner'] = array(
+      'items callback' => 'activity_log_eg_not_stream_owner',
+      'title' => t('Everyone except the user in whose stream the activity will appear'),
+      'weight' => -87,
+    );
   }
   return $groups;
 }
@@ -436,6 +446,20 @@ function activity_log_eg_everyone_except_custom($event, $settings, $id) {
     return array('user' => array_diff(_activity_log_get_active_group_members(), array($id)));
   }
   return array('user' => array(-$id));
+}
+
+/**
+ * The stream owner.
+ */
+function activity_log_eg_stream_owner($event, $settings) {
+  return array('user' => array('stream owner'));
+}
+
+/**
+ * Everyone except the stream owner.
+ */
+function activity_log_eg_not_stream_owner($event, settings) {
+  return array('user' => array('not stream owner'));
 }
 
 /**
