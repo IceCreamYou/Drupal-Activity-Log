@@ -152,6 +152,7 @@ function activity_log_views_default_views() {
     'type' => 'none',
   ));
   $handler->override_option('use_ajax', TRUE);
+  $handler->override_option('items_per_page', 20);
   $handler->override_option('use_pager', '1');
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->override_option('path', 'activities');
