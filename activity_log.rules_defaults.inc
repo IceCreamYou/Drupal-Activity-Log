@@ -107,7 +107,7 @@ function activity_log_rules_defaults_node_insert() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -177,6 +177,7 @@ function activity_log_rules_defaults_node_insert() {
               'resources' => '',
             ),
             'acting_uid' => '[author:uid]',
+            'display_type' => 'web',
             'tid' => '4',
             '#eval input' => 
             array (
@@ -240,7 +241,7 @@ function activity_log_rules_defaults_node_insert() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -310,6 +311,7 @@ function activity_log_rules_defaults_node_insert() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '8',
             '#eval input' => 
             array (
@@ -405,7 +407,7 @@ function activity_log_rules_defaults_node_insert() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -475,6 +477,7 @@ function activity_log_rules_defaults_node_insert() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '9',
             '#eval input' => 
             array (
@@ -664,7 +667,7 @@ function activity_log_rules_defaults_node_insert_og() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link] in [node:ogname-title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in [node:ogname-title-link]</div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -734,6 +737,7 @@ function activity_log_rules_defaults_node_insert_og() {
               'resources' => '',
             ),
             'acting_uid' => '[author:uid]',
+            'display_type' => 'web',
             'tid' => '4',
             '#eval input' => 
             array (
@@ -812,7 +816,7 @@ function activity_log_rules_defaults_node_insert_og() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -882,6 +886,7 @@ function activity_log_rules_defaults_node_insert_og() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '5',
             '#eval input' => 
             array (
@@ -945,7 +950,7 @@ function activity_log_rules_defaults_node_insert_og() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link] in [node:ogname-title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in [node:ogname-title-link]</div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -1015,6 +1020,7 @@ function activity_log_rules_defaults_node_insert_og() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '6',
             '#eval input' => 
             array (
@@ -1108,7 +1114,7 @@ function activity_log_rules_defaults_node_insert_og() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] [node:title-link] in [node:ogname-title-link]</div>
+                'template' => '<div class="activity-log-content">[author:user] added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in [node:ogname-title-link]</div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:since] ago</a></div>',
               ),
             ),
@@ -1178,6 +1184,7 @@ function activity_log_rules_defaults_node_insert_og() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '7',
             '#eval input' => 
             array (
@@ -1369,6 +1376,7 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '1',
             '#eval input' => 
             array (
@@ -1537,6 +1545,7 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '2',
             '#eval input' => 
             array (
@@ -1745,6 +1754,7 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '1',
             '#eval input' => 
             array (
@@ -1882,6 +1892,7 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '2',
             '#eval input' => 
             array (
@@ -2049,6 +2060,7 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '3',
             '#eval input' => 
             array (
@@ -2233,6 +2245,7 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '1',
             '#eval input' => 
             array (
@@ -2396,6 +2409,7 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '2',
             '#eval input' => 
             array (
@@ -2587,6 +2601,7 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '1',
             '#eval input' => 
             array (
@@ -2752,6 +2767,7 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               'resources' => '',
             ),
             'acting_uid' => '[status:sender-uid]',
+            'display_type' => 'web',
             'tid' => '2',
             '#eval input' => 
             array (
@@ -2887,6 +2903,7 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '3',
             '#eval input' => 
             array (
@@ -3062,6 +3079,7 @@ function activity_log_rules_defaults_og_join() {
               'resources' => '',
             ),
             'acting_uid' => '[account:uid]',
+            'display_type' => 'web',
             'tid' => '10',
             '#eval input' => 
             array (
@@ -3228,6 +3246,7 @@ function activity_log_rules_defaults_og_join() {
               'resources' => '',
             ),
             'acting_uid' => '[account:uid]',
+            'display_type' => 'web',
             'tid' => '11',
             '#eval input' => 
             array (
@@ -3379,6 +3398,7 @@ function activity_log_rules_defaults_og_join() {
               'resources' => '',
             ),
             'acting_uid' => '',
+            'display_type' => 'web',
             'tid' => '12',
             '#eval input' => 
             array (
@@ -3536,6 +3556,7 @@ function activity_log_rules_defaults_ur_request() {
               'resources' => '',
             ),
             'acting_uid' => '[requester:uid]',
+            'display_type' => 'web',
             'tid' => '13',
             '#eval input' => 
             array (
@@ -3704,6 +3725,7 @@ function activity_log_rules_defaults_ur_request() {
               'resources' => '',
             ),
             'acting_uid' => '[requester:uid]',
+            'display_type' => 'web',
             'tid' => '14',
             '#eval input' => 
             array (

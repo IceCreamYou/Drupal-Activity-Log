@@ -144,6 +144,22 @@ function activity_log_views_default_views() {
       'validate_argument_php' => '',
     ),
   ));
+  $handler->override_option('filters', array(
+    'display_type' => array(
+      'operator' => '=',
+      'value' => 'web',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'display_type',
+      'table' => 'activity_log_templates',
+      'field' => 'display_type',
+      'relationship' => 'none',
+    ),
+  ));
   $handler->override_option('access', array(
     'type' => 'perm',
     'perm' => 'view all activity messages',

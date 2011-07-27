@@ -662,6 +662,7 @@ function activity_log_input_evaluator_process_apply($string, $data = NULL, &$sta
         'id' => activity_log_get_id($info->data->_data),
         'type' => $info->info['type'],
         'class' => (empty($info->data->_data->class) ? 'rules_data_type_'. $info->info['type'] : $info->data->_data->class),
+        'timestamp' => activity_log_get_timestamp($info->data->_data),
       );
     }
   }
@@ -698,6 +699,22 @@ function activity_log_get_id($data) {
   }
 }
 
+/**
+ * Attempt to extract the timestamp of an object.
+ *
+ * We need to do this rather than relying on time() because we need to know the
+ * time the entity was created when regenerating activity.
+ */
+function activity_log_get_timestamp($data) {
+  // Practically everything uses either "timestamp" or "created." User Relationships uses created_at and Userpoints uses time_stamp.
+  foreach (array('timestamp', 'created', 'created_at', 'time_stamp') as $key) {
+    if (isset($data->$key)) {
+      return $data->$key;
+    }
+  }
+  // If we don't find anything, return the current time. This will be accurate except when regenerating activity.
+  return time();
+}
 
 /**
  * Implementation of callback_help().
@@ -750,6 +767,15 @@ function activity_log_log_action($settings) {
   if (empty($settings['visibility']['viewer_id'])) {
     $settings['visibility']['viewer_id'] = $user->uid;
   }
+  $event = (object) array(
+    'tid' => $settings['tid'],
+    'created' => $target['timestamp'],
+    'acting_uid' => $settings['acting_uid'],
+    'target_id' => $target['id'],
+    'target_type' => $target['type'],
+    'target_class' => $target['class'],
+    'id_map' => $map_serialized,
+  );
   // Determine who the stream owners and viewers are.
   $stream_owner_entity_groups = module_invoke_all('activity_log_entity_groups');
   $viewer_entity_groups = module_invoke_all('activity_log_entity_groups', FALSE);
@@ -761,6 +787,16 @@ function activity_log_log_action($settings) {
       $group = $groups[$name];
       if (isset($group['file']) && file_exists($group['file'])) {
         require_once $group['file'];
+      }
+      // Load the group context. We can't just use og_get_group_context() because that doesn't work during cron and when regenerating.
+      if (module_exists('og') && $target['type'] == 'node' && $target['id']) {
+        $node = node_load(array('nid' => $target['id']));
+        // OG attempts to choose a group the user is a member of. When creating the node this will be $user; otherwise we try to use the node author.
+        $account = ($node->uid == $user->uid ? $user : activity_log_user_load($node->uid));
+        $og = og_determine_context_get_group($node, $account = NULL);
+        if (!empty($og) && !empty($og->nid)) {
+          $event->og = $og;
+        }
       }
       $args = array($event, $settings);
       if (isset($group['expose fields'])) {
@@ -795,15 +831,9 @@ function activity_log_log_action($settings) {
     $viewers = array(0);
   }
   // Store the event record.
-  $event = (object) array(
-    'tid' => $settings['tid'],
-    'created' => $time,
-    'acting_uid' => $settings['acting_uid'],
-    'target_id' => $target['id'],
-    'target_type' => $target['type'],
-    'target_class' => $target['class'],
-    'id_map' => $map_serialized,
-  );
+  if (isset($event->og)) {
+    unset($event->og);
+  }
   drupal_write_record('activity_log_events', $event);
   // Find similar events based on the grouping method.
   $group_method = $settings['grouping']['group_method'];
@@ -872,7 +902,7 @@ function activity_log_log_action($settings) {
           elseif ($viewer === 'not stream owner') {
             $viewer = -$id;
           }
-          if (!in_array("$id $type $viewer", $pairs)) {
+          if (!in_array("$event->tid $event->target_id $event->target_type $id $type $viewer", $pairs)) {
             $pairs[] = "$id $type $viewer";
             $message = (object) array(
               'tid' => $event->tid,
