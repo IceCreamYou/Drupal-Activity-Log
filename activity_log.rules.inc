@@ -784,10 +784,16 @@ function activity_log_log_action($settings) {
     $results[$type] = array();
     $groups = $type == 'viewer' ? $viewer_entity_groups : $stream_owner_entity_groups;
     foreach (array_filter($settings['visibility'][$type .'_entity_group']) as $name) {
-      $group = $groups[$name];
+      if (isset($groups[$name])) {
+        $group = $groups[$name];
+      }
+      else {
+        continue;
+      }
       if (isset($group['file']) && file_exists($group['file'])) {
         require_once $group['file'];
       }
+      $event->og = NULL; // Avoid needing to call isset() later to avoid E_STRICT errors when OG isn't installed
       // Load the group context. We can't just use og_get_group_context() because that doesn't work during cron and when regenerating.
       if (module_exists('og') && $target['type'] == 'node' && $target['id']) {
         $node = node_load(array('nid' => $target['id']));
@@ -831,9 +837,7 @@ function activity_log_log_action($settings) {
     $viewers = array(0);
   }
   // Store the event record.
-  if (isset($event->og)) {
-    unset($event->og);
-  }
+  unset($event->og);
   drupal_write_record('activity_log_events', $event);
   // Find similar events based on the grouping method.
   $group_method = $settings['grouping']['group_method'];
