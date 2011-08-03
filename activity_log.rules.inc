@@ -784,22 +784,30 @@ function activity_log_log_action($settings) {
     $results[$type] = array();
     $groups = $type == 'viewer' ? $viewer_entity_groups : $stream_owner_entity_groups;
     foreach (array_filter($settings['visibility'][$type .'_entity_group']) as $name) {
-      if (isset($groups[$name])) {
-        $group = $groups[$name];
-      }
-      else {
-        continue;
-      }
+      $group = $groups[$name];
       if (isset($group['file']) && file_exists($group['file'])) {
         require_once $group['file'];
       }
-      $event->og = NULL; // Avoid needing to call isset() later to avoid E_STRICT errors when OG isn't installed
       // Load the group context. We can't just use og_get_group_context() because that doesn't work during cron and when regenerating.
-      if (module_exists('og') && $target['type'] == 'node' && $target['id']) {
-        $node = node_load(array('nid' => $target['id']));
-        // OG attempts to choose a group the user is a member of. When creating the node this will be $user; otherwise we try to use the node author.
-        $account = ($node->uid == $user->uid ? $user : activity_log_user_load($node->uid));
-        $og = og_determine_context_get_group($node, $account = NULL);
+      if (module_exists('og')) {
+        if ($target['type'] == 'node' && $target['id']) {
+          $node = node_load(array('nid' => $target['id']));
+          // OG attempts to choose a group the acting user is a member of. When creating the node this will be $user; otherwise we try to use the node author.
+          $account = ($node->uid == $user->uid ? $user : activity_log_user_load($node->uid));
+          $og = og_determine_context_get_group($node, $account);
+        }
+        elseif ($target['type'] == 'facebook_status') {
+          $status = facebook_status_load($target['id']);
+          if ($status->type == 'og') {
+            $node = node_load(array('nid' => $status->recipient));
+            // OG attempts to choose a group the acting user is a member of. When creating the status this will be $user; otherwise we try to use the status sender.
+            $account = ($status->sender == $user->uid ? $user : activity_log_user_load($status->sender));
+            $og = og_determine_context_get_group($node, $account);
+          }
+        }
+        if (empty($og)) {
+          $og = og_get_group_context();
+        }
         if (!empty($og) && !empty($og->nid)) {
           $event->og = $og;
         }
@@ -837,7 +845,9 @@ function activity_log_log_action($settings) {
     $viewers = array(0);
   }
   // Store the event record.
-  unset($event->og);
+  if (isset($event->og)) {
+    unset($event->og);
+  }
   drupal_write_record('activity_log_events', $event);
   // Find similar events based on the grouping method.
   $group_method = $settings['grouping']['group_method'];
