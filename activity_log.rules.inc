@@ -917,7 +917,7 @@ function activity_log_log_action($settings) {
             $viewer = -$id;
           }
           if (!in_array("$event->tid $event->target_id $event->target_type $id $type $viewer", $pairs)) {
-            $pairs[] = "$id $type $viewer";
+            $pairs[] = "$event->tid $event->target_id $event->target_type $id $type $viewer";
             $message = (object) array(
               'tid' => $event->tid,
               'aids' => ','. $event->aid .',',
