@@ -947,3 +947,37 @@ function activity_log_log_action($settings) {
   // Invokes hook_activity_log_event($event, $messages, $settings).
   module_invoke_all('activity_log_event', $event, $messages, $settings);
 }
+
+//=======================================
+// CONDITION: NODE WAS POSTED IN A GROUP
+//=======================================
+// TODO: REMOVE THIS ONCE http://drupal.org/node/1239888 LANDS
+
+/**
+ * Implementation of hook_rules_condition_info_alter().
+ */
+function activity_log_rules_condition_info_alter(&$conditions) {
+  if (isset($conditions['og_rules_condition_content_is_group_post'])) {
+    $conditions['og_rules_condition_content_is_group_post']['label'] = t('Content type can be a group post');
+    $conditions['og_rules_condition_content_is_group_post']['help'] = t('Evaluates to TRUE if content of this type can be posted in a group.');
+  }
+  if (!isset($conditions['og_rules_condition_posted_in_group'])) {
+    $conditions['og_rules_condition_posted_in_group'] = array(
+      'label' => t('Content was posted in a group'),
+      'arguments' => array(
+        'node' => array(
+          'type' => 'node',
+          'label' => t('Group content'),
+        ),
+      ),
+      'help' => t('Evaluates to TRUE if the content was posted in a group.'),
+      'module' => 'Organic groups',
+    );
+  }
+}
+
+if (!function_exists('og_rules_condition_posted_in_group') && function_exists('og_get_node_groups')) {
+  function og_rules_condition_posted_in_group($node, $settings) {
+    return count(og_get_node_groups($node)) > 0;
+  }
+}
