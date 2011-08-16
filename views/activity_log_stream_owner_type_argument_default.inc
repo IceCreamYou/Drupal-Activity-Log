@@ -16,7 +16,7 @@ class activity_log_stream_owner_type_argument_default extends views_plugin_argum
       '#type' => 'select',
       '#title' => t('Stream type'),
       '#description' => t('The type of entity on whose stream the activity is intended to appear.'),
-      '#default_value' => isset($argument[$option_name]) ? $argument[$option_name] : 'user',
+      '#default_value' => isset($argument['option_name']) ? $argument['option_name'] : 'user',
       '#options' => activity_log_get_rules_data_types(),
       '#required' => TRUE,
       '#process' => array('views_process_dependency'),
