@@ -68,7 +68,7 @@ function activity_log_perm() {
  */
 function activity_log_cron() {
   // Delete event logs.
-  $time = time() - (86400 * variable_get('activity_log_maxage', 30));
+  $time = time() - (86400 * variable_get('activity_log_max_age', 365));
   db_query("DELETE FROM {activity_log_events} WHERE created < %d", $time);
   db_query("DELETE FROM {activity_log_messages} WHERE last_updated < %d", $time);
 }

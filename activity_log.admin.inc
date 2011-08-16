@@ -20,7 +20,7 @@ function activity_log_admin($form_state) {
     '#type' => 'textfield',
     '#title' => t('Number of days to store an activity record'),
     '#description' => t('Activity records older than this many days will be deleted when cron runs.'),
-    '#default_value' => variable_get('activity_log_max_age', 30),
+    '#default_value' => variable_get('activity_log_max_age', 365),
     '#maxlength' => 6,
     '#size' => 4,
   );
