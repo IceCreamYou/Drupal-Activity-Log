@@ -1,5 +1,6 @@
 .activity-log-message {
-  border-bottom: 1px dotted #CCCCCC;
+  border-bottom-style: dotted;
+  border-bottom-width: 1px;
   padding: 0.75em 0;
 }
 
@@ -21,4 +22,19 @@ div.item-list ul.activity-log-collection-list-vertical li {
 
 .activity-log-collection-more-expand {
   display: none;
+}
+
+.activity-log-indent {
+  overflow: hidden;
+}
+
+.activity-log-picture {
+  float: left;
+  margin-right: 10px;
+  width: 30px;
+}
+
+.activity-log-picture img {
+  width: 100%;
+  height: auto;
 }
