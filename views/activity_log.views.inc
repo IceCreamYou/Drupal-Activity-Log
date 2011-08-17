@@ -42,6 +42,9 @@ function activity_log_views_handlers() {
       'activity_log_views_handler_filter_display_type' => array(
         'parent' => 'views_handler_filter',
       ),
+      'activity_log_views_handler_filter_owner_is_current_user' => array(
+        'parent' => 'views_handler_filter_boolean_operator',
+      ),
       'activity_log_views_handler_filter_owner_type' => array(
         'parent' => 'views_handler_filter',
       ),
@@ -136,6 +139,14 @@ function activity_log_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_string',
+    ),
+  );
+
+  $data['activity_log_messages']['stream_owner_is_current_user'] = array(
+    'title' => t('Stream owner is current user'),
+    'help' => t("Show the current user's stream"),
+    'filter' => array(
+      'handler' => 'activity_log_views_handler_filter_owner_is_current_user',
     ),
   );
 
