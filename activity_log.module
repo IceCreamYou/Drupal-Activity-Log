@@ -389,11 +389,13 @@ function activity_log_views_api() {
  */
 function activity_log_token_list($type = 'all') {
   $tokens = array();
-  foreach (flag_get_types() as $flag_type) {
-    if ($type == $flag_type || $type == 'all') {
-      $flags = flag_get_flags($flag_type);
-      foreach ($flags as $flag) {
-        $tokens[$flag_type]['flag-'. str_replace('_', '-', $flag->name) .'-link'] = t('(Un)flag link for the "@flag" flag.', array('@flag' => $flag->get_title()));
+  if (module_exists('flag')) {
+    foreach (flag_get_types() as $flag_type) {
+      if ($type == $flag_type || $type == 'all') {
+        $flags = flag_get_flags($flag_type);
+        foreach ($flags as $flag) {
+          $tokens[$flag_type]['flag-'. str_replace('_', '-', $flag->name) .'-link'] = t('(Un)flag link for the "@flag" flag.', array('@flag' => $flag->get_title()));
+        }
       }
     }
   }
@@ -411,10 +413,12 @@ function activity_log_token_list($type = 'all') {
  */
 function activity_log_token_values($type, $object = NULL, $options = array()) {
   $values = array();
-  if (in_array($type, flag_get_types())) {
-    $flags = flag_get_flags($type);
-    foreach ($flags as $flag) {
-      $values['flag-'. str_replace('_', '-', $flag->name) .'-link'] = flag_create_link($flag->name, $flag->get_content_id($object));
+  if (module_exists('flag')) {
+    if (in_array($type, flag_get_types())) {
+      $flags = flag_get_flags($type);
+      foreach ($flags as $flag) {
+        $values['flag-'. str_replace('_', '-', $flag->name) .'-link'] = flag_create_link($flag->name, $flag->get_content_id($object));
+      }
     }
   }
   if ($type == 'node' && module_exists('og') && !empty($object->og_groups) && is_array($object->og_groups)) {
