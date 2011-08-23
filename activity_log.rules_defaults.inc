@@ -3488,7 +3488,7 @@ function activity_log_rules_defaults_ur_request() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"></div><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div>',
+                'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
               ),
             ),
             'grouping' => 
@@ -3502,7 +3502,7 @@ function activity_log_rules_defaults_ur_request() {
               array (
                 'en' => 
                 array (
-                  'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"></div><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
+                  'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
                 ),
               ),
             ),
@@ -3657,7 +3657,7 @@ function activity_log_rules_defaults_ur_request() {
             array (
               'en' => 
               array (
-                'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"></div><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
+                'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
               ),
             ),
             'grouping' => 
@@ -3671,7 +3671,7 @@ function activity_log_rules_defaults_ur_request() {
               array (
                 'en' => 
                 array (
-                  'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"></div><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
+                  'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
                 ),
               ),
             ),
