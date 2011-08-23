@@ -197,6 +197,11 @@ function activity_log_entity_groups($stream_owner = TRUE) {
     }
   }
   if ($og && $fg) {
+    $groups['active group flaggers'] = array(
+      'items callback' => 'activity_log_eg_active_group_flaggers',
+      'title' => t('Users that flagged the active group'),
+      'weight' => -55,
+    );
     $groups['active group flaggers acting user'] = array(
       'items callback' => 'activity_log_eg_active_group_flaggers_acting_user',
       'title' => t('Members of the active group who flagged the acting user'),
@@ -223,6 +228,15 @@ function activity_log_entity_groups($stream_owner = TRUE) {
         'expose fields' => array('id'),
         'additional arguments' => array($flag),
         'weight' => -40,
+      );
+    }
+    $flags_group = flag_get_flags('node');
+    foreach ($flags_group as $flag) {
+      $groups['active group flaggers '. $flag->name] = array(
+        'items callback' => 'activity_log_eg_active_group_flaggers_type',
+        'title' => t('Users that flagged the active group with the %flag flag', array('%flag' => $flag->title)),
+        'additional arguments' => array($flag),
+        'weight' => -55,
       );
     }
   }
@@ -622,6 +636,25 @@ function activity_log_eg_active_group_flaggers_type_custom_user($event, $setting
 }
 
 /**
+ * Returns the IDs of the users that have flagged the active group
+ */
+function activity_log_eg_active_group_flaggers($event, $settings, $flag_name = NULL) {
+  if (module_exists('flag') && module_exists('og')) {
+    $members = _activity_log_get_active_group_flaggers($event, $flag_name);
+    if ($members) {
+      return array('user' => $members);
+    }
+  }
+}
+
+/**
+ * Returns the IDs of the users that have flagged the active group with a certain flag
+ */
+function activity_log_eg_active_group_flaggers_type($event, $settings, $flag) {
+  return activity_log_eg_active_group_flaggers($event, $settings, $flag->name);
+}
+
+/**
  * Returns the entity IDs for the Everyone group.
  */
 function activity_log_eg_everyone($event, $settings) {
@@ -704,6 +737,18 @@ function _activity_log_get_active_group_members($event, $admin = FALSE) {
     $uids[] = $account->uid;
   }
   return $uids;
+}
+
+/**
+ * Gets an array of UIDs of users that flagged the current group.
+ *
+ * @param $event
+ *   The event object.
+ * @param $flag_name
+ *   The name of the flag with which the group has been flagged.
+ */
+function _activity_log_get_active_group_flaggers($event, $flag_name = NULL) {
+  return empty($event->og) ? array() : array_keys(flag_get_content_flags('node', $group->nid, $flag_name));
 }
 
 /**
