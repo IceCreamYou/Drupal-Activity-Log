@@ -9,13 +9,14 @@
  * Defines the default entity groups.
  */
 function activity_log_entity_groups($stream_owner = TRUE) {
-  $og = module_exists('og');
-  $ur = module_exists('user_relationships_api');
   $co = module_exists('comments');
-  $fc = module_exists('fbss_comments');
-  $ft = module_exists('facebook_status_tags');
   $fb = module_exists('facebook_status');
+  $ft = module_exists('facebook_status_tags');
+  $fc = module_exists('fbss_comments');
+  $fg = module_exists('flag');
+  $og = module_exists('og');
   $tx = module_exists('taxonomy');
+  $ur = module_exists('user_relationships_api');
   if ($ur) {
     $ur = $ur && (db_result(db_query("SELECT COUNT(rtid) FROM {user_relationship_types}")) > 0);
   }
@@ -163,6 +164,67 @@ function activity_log_entity_groups($stream_owner = TRUE) {
       'additional arguments' => array($stream_owner),
       'weight' => -10,
     );
+  }
+  if ($fg) {
+    $groups['acting user flaggers'] = array(
+      'items callback' => 'activity_log_eg_acting_user_flaggers',
+      'title' => t("The users who flagged the acting user"),
+      'expose fields' => array('acting_uid'),
+      'weight' => -59,
+    );
+    $groups['custom user flaggers'] = array(
+      'items callback' => 'activity_log_eg_custom_user_flaggers',
+      'title' => t("The users who flagged the custom user"),
+      'expose fields' => array('id'),
+      'weight' => -58,
+    );
+    $flags = flag_get_flags('user');
+    foreach ($flags as $flag) {
+      $groups['acting user flaggers '. $flag->name] = array(
+        'items callback' => 'activity_log_eg_acting_user_flaggers_type',
+        'title' => t("The users who flagged the acting user with the %flag flag", array('%flag' => $flag->title)),
+        'expose fields' => array('acting_uid'),
+        'additional arguments' => array($flag),
+        'weight' => -57,
+      );
+      $groups['custom user flaggers '. $flag->name] = array(
+        'items callback' => 'activity_log_eg_custom_user_flaggers_type',
+        'title' => t("The users who flagged the custom user with the %flag flag", array('%flag' => $flag->title)),
+        'expose fields' => array('id'),
+        'additional arguments' => array($flag),
+        'weight' => -56,
+      );
+    }
+  }
+  if ($og && $fg) {
+    $groups['active group flaggers acting user'] = array(
+      'items callback' => 'activity_log_eg_active_group_flaggers_acting_user',
+      'title' => t('Members of the active group who flagged the acting user'),
+      'expose fields' => array('acting_uid'),
+      'weight' => -55,
+    );
+    $groups['active group flaggers custom user'] = array(
+      'items callback' => 'activity_log_eg_active_group_flaggers_custom_user',
+      'title' => t('Members of the active group who flagged a custom user'),
+      'expose fields' => array('id'),
+      'weight' => -50,
+    );
+    foreach ($flags as $flag) {
+      $groups['active group flaggers '. $flag->name .' acting user'] = array(
+        'items callback' => 'activity_log_eg_active_group_flaggers_type_acting_user',
+        'title' => t('Members of the active group who have flagged the acting user with the %flag flag', array('%flag' => $flag->title)),
+        'expose fields' => array('acting_uid'),
+        'additional arguments' => array($flag),
+        'weight' => -45,
+      );
+      $groups['active group flaggers '. $flag->name .' custom user'] = array(
+        'items callback' => 'activity_log_eg_active_group_flaggers_type_custom_user',
+        'title' => t('Members of the active group who have flagged a custom user with the %flag flag', array('%flag' => $flag->title)),
+        'expose fields' => array('id'),
+        'additional arguments' => array($flag),
+        'weight' => -40,
+      );
+    }
   }
   if (!$stream_owner) {
     unset($groups['active group'], $groups['hashtag terms'], $groups['node terms'], $groups['custom']['expose fields'][1]);
@@ -485,6 +547,78 @@ function activity_log_eg_node_terms($event, $settings) {
       return array('taxonomy_term' => $tids);
     }
   }
+}
+
+/**
+ * Returns the entity IDs for the Acting user's flaggers (people who flagged the acting user)
+ */
+function activity_log_eg_acting_user_flaggers($event, $settings, $acting_uid) {
+  if (module_exists('flag') && $acting_uid && $flags = flag_get_content_flags('user', $acting_uid)) {
+    return array('user' => array_keys($flags));
+  }
+}
+
+/**
+ * Returns the entity IDs for the Custom user's flaggers (people who flagged the custom user)
+ */
+function activity_log_eg_custom_user_flaggers($event, $settings, $id) {
+  return activity_log_eg_acting_user_flaggers($event, $settings, $id);
+}
+
+/**
+ * Returns the entity IDs for the Acting user's flaggers (people who flagged the acting user), for the %flag flag
+ */
+function activity_log_eg_acting_user_flaggers_type($event, $settings, $acting_uid, $flag) {
+  if (module_exists('flag') && $acting_uid && $flag && $flags = flag_get_content_flags('user', $acting_uid, $flag->name)) {
+    return array('user' => array_keys($flags));
+  }
+}
+
+/**
+ * Returns the entity IDs for the custom user's flaggers (people who flagged the custom user), for the %flag flag
+ */
+function activity_log_eg_custom_user_flaggers_type($event, $settings, $id, $flag) {
+  return activity_log_eg_acting_user_flaggers_type($event, $settings, $id, $flag);
+}
+
+/**
+ * Returns the IDs of the members of the active group who have flagged the acting user
+ */
+function activity_log_eg_active_group_flaggers_acting_user($event, $settings, $acting_uid) {
+  if (module_exists('flag') && $acting_uid && module_exists('og')) {
+    $members = _activity_log_get_active_group_members($event);
+    $flags = flag_get_content_flags('user', $acting_uid);
+    if ($uids = array_intersect($members, array_keys($flags))) {
+      return array('user' => $uids);
+    }
+  }
+}
+
+/**
+ * Returns the IDs of the members of the active group who have flagged a custom user
+ */
+function activity_log_eg_active_group_flaggers_custom_user($event, $settings, $id) {
+  return activity_log_eg_active_group_flaggers_acting_user($event, $settings, $id);
+}
+
+/**
+ * Returns the IDs of the members of the active group who have flagged the acting user with the %flag flag
+ */
+function activity_log_eg_active_group_flaggers_type_acting_user($event, $settings, $acting_uid, $flag) {
+  if (module_exists('flag') && $acting_uid && module_exists('og')) {
+    $members = _activity_log_get_active_group_members($event);
+    $flags = flag_get_content_flags('user', $acting_uid, $flag->name);
+    if ($uids = array_intersect($members, array_keys($flags))) {
+      return array('user' => $uids);
+    }
+  }
+}
+
+/**
+ * Returns the IDs of the members of the active group who have flagged a custom user with the %flag flag
+ */
+function activity_log_eg_active_group_flaggers_type_custom_user($event, $settings, $id, $flag) {
+  return activity_log_eg_active_group_flaggers_type_acting_user($event, $settings, $id, $flag);
 }
 
 /**

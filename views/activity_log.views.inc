@@ -36,12 +36,12 @@ function activity_log_views_query_alter(&$view, &$query) {
  *     use something like $view->query->fields[$field]['alias'] instead.
  */
 function activity_log_views_pre_render(&$view) {
-  // Remove status updates from $view->result if the viewing user doesn't have permission to view the node.
+  // Remove activity from $view->result if the viewing user doesn't have permission to view the associated node.
   // We use db_rewrite_sql() instead of running node_access() on each node for performance.
   if ($view->base_table == 'activity_log_messages' && !empty($view->result)) {
     $aids = array();
     $aid_to_result_key_map = array();
-    foreach($view->result as $key => $result) {
+    foreach ($view->result as $key => $result) {
       if ($result->activity_log_messages_target_type == 'node') {
         $result_aids = array_filter(explode(',', $result->activity_log_messages_aids));
         $aids = array_merge($aids, $result_aids);
