@@ -331,7 +331,8 @@ function activity_log_log_action_validate($form, $form_state) {
  */
 function activity_log_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'rules_admin_form_edit' || $form_id == 'rules_admin_form_add') {
-    if ($form_state['storage']['element']['#name'] == 'activity_log_log_action') {
+    if ($form_state['element']['#name'] == 'activity_log_log_action') {
+      rules_init_element_info($form_state['element']);
       // Hide stream owner / viewer entity groups that are not applicable to this rule.
       $rules = _rules_get_rule_sets();
       $stream_owner_groups = module_invoke_all('activity_log_entity_groups');
