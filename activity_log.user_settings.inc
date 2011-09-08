@@ -57,7 +57,7 @@ function _activity_log_user_form($account) {
 /**
  * Saves the form that allows disabling seeing certain activity types.
  */
-function _activity_log_user_form_submit($edit) {
+function _activity_log_user_form_submit($edit, $account) {
   $all = $edit['activity_log_types_all_values'];
   $disabled = $edit['activity_log_types_disabled_values'];
   $values = array_filter($edit['activity_log_types']);

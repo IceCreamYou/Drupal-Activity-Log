@@ -106,7 +106,7 @@ function activity_log_user($op, &$edit, &$account, $category = NULL) {
   elseif ($op == 'update' && $category == 'account') {
     if (user_access('configure preferences for which activity types appear in activity streams', $account)) {
       module_load_include('inc', 'activity_log', 'activity_log.user_settings');
-      _activity_log_user_form_submit($edit);
+      _activity_log_user_form_submit($edit, $account);
     }
     _activity_log_user_update($account->uid);
   }
