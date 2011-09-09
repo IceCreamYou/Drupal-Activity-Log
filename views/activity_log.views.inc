@@ -12,9 +12,9 @@ function activity_log_views_query_alter(&$view, &$query) {
   if ($query->base_table == 'activity_log_messages') {
     drupal_add_css(drupal_get_path('module', 'activity_log') .'/activity_log.css');
     global $user;
-    $query->ensure_table('activity_log_templates');
+    $template_alias = $query->ensure_table('activity_log_templates');
     // Don't show disabled activity types.
-    $query->add_where(0, db_prefix_tables("{activity_log_templates}.pid NOT IN (SELECT pid FROM {activity_log_disabled_types} WHERE uid = %d)"), $user->uid);
+    $query->add_where(0, db_prefix_tables("$template_alias.pid NOT IN (SELECT pid FROM {activity_log_disabled_types} WHERE uid = %d)"), $user->uid);
     // Only show activity where the viewer is "everyone" or the current user.
     $query->add_where(0, "
       viewer_id = 0 OR
