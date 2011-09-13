@@ -637,7 +637,9 @@ function activity_log_rules_evaluator() {
  * Implementation of callback_prepare().
  */
 function activity_log_input_evaluator_process_prepare($string, $variables) {
-  return TRUE;
+  if ($string === ACTIVITY_LOG_DELIMITER) {
+    return TRUE;
+  }
 }
 
 /**
