@@ -42,7 +42,7 @@ function activity_log_views_pre_render(&$view) {
     $aids = array();
     $aid_to_result_key_map = array();
     foreach ($view->result as $key => $result) {
-      if ($result->activity_log_messages_target_type == 'node') {
+      if (isset($result->activity_log_messages_target_type) && isset($result->activity_log_messages_aids) && $result->activity_log_messages_target_type == 'node') {
         $result_aids = array_filter(explode(',', $result->activity_log_messages_aids));
         $aids = array_merge($aids, $result_aids);
         foreach ($result_aids as $aid) {
