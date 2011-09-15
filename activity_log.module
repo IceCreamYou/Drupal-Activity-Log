@@ -445,6 +445,7 @@ function activity_log_token_list($type = 'all') {
   }
   if ($type == 'user') {
     $tokens['user']['picture'] = t("The user's picture");
+    $tokens['user']['username-themed'] = t("The themed username (links to the user's profile for users who have permission to view user profiles)");
   }
   return $tokens;
 }
@@ -467,8 +468,9 @@ function activity_log_token_values($type, $object = NULL, $options = array()) {
     $values['og-url'] = url('node/'. $gids[0], array('absolute' => TRUE));
   }
   if ($type == 'user') {
-    $account = empty($object) ? user_load(array('uid' => $GLOBALS['user']->uid)) : $object;
+    $account = empty($object) ? activity_log_user_load($GLOBALS['user']->uid) : $object;
     $values['picture'] = theme('user_picture', $account);
+    $values['username-themed'] = theme('username', $account);
   }
   return $values;
 }
