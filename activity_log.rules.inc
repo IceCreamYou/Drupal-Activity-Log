@@ -894,6 +894,7 @@ function activity_log_log_action($settings) {
     }
   }
   else {
+    $display_type = $settings['display_type'];
     foreach ($owners as $type => $ids) {
       foreach (array_unique($ids) as $id) {
         foreach ($viewers as $viewer) {
@@ -906,8 +907,8 @@ function activity_log_log_action($settings) {
           elseif ($viewer === 'not stream owner') {
             $viewer = -$id;
           }
-          if (!in_array("$event->target_id $event->target_type $id $type $viewer", $pairs)) {
-            $pairs[] = "$event->target_id $event->target_type $id $type $viewer";
+          if (!in_array("$event->target_id $event->target_type $display_type $id $type $viewer", $pairs)) {
+            $pairs[] = "$event->target_id $event->target_type $display_type $id $type $viewer";
             $message = (object) array(
               'tid' => $event->tid,
               'aids' => ','. $event->aid .',',
