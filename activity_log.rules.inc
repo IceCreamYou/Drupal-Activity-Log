@@ -883,11 +883,38 @@ function activity_log_log_action($settings) {
   // If we found similar events, group with them. If not, save new messages.
   $messages = array();
   if (!empty($mids)) {
-    db_query("
-      UPDATE {activity_log_messages}
-      SET aids = CONCAT(aids, %d, ','), last_updated = %d, cached = ''
-      WHERE mid IN (". db_placeholders($mids) .")"
-    , array_merge(array($event->aid, $event->created), $mids));
+    // The ANSI standard for concatenation is "string || string", but some
+    // Oracle flavors don't support || and most can turn support for it off.
+    // Every major database driver supports CONCAT except MSSQL, which only
+    // supports "+" as a concatenation operator, and PostgreSQL and SQLite.
+    // If there is a way to perform this update in a single query without using
+    // CONCAT, I can't figure it out. First reported in
+    // https://drupal.org/node/1305138. Drupal 7 supports CONCAT for all
+    // databases by explicitly creating it as a function (see
+    // https://drupal.org/node/809698). This solution inspired by Pathauto in
+    // https://drupal.org/node/319070#comment-3066528.
+    switch ($GLOBALS['db_type']) {
+      case 'mysql':
+      case 'mysqli':
+        db_query("
+          UPDATE {activity_log_messages}
+          SET aids = CONCAT(aids, '%s'), last_updated = %d, cached = ''
+          WHERE mid IN (". db_placeholders($mids) .")"
+        , array_merge(array($event->aid .',', $event->created), $mids));
+      case 'mssql': // Note: MSSQL requires an explicit CAST if any of the concatenation arguments are not strings.
+        db_query("
+          UPDATE {activity_log_messages}
+          SET aids = (aids + '%s'), last_updated = %d, cached = ''
+          WHERE mid IN (". db_placeholders($mids) .")"
+        , array_merge(array($event->aid .',', $event->created), $mids));
+      case 'pgsql':
+      default:
+        db_query("
+          UPDATE {activity_log_messages}
+          SET aids = (aids || '%s'), last_updated = %d, cached = ''
+          WHERE mid IN (". db_placeholders($mids) .")"
+        , array_merge(array($event->aid .',', $event->created), $mids));
+    }
     $result = db_query("SELECT * FROM {activity_log_messages} WHERE mid IN (". db_placeholders($mids) .")", $mids);
     while ($message = db_fetch_object($result)) {
       $messages[] = $message;
