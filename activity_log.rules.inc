@@ -13,7 +13,10 @@
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
+  //$default_language = language_default();
+  //$languages = array($default_language->language => $default_language);
   $languages = language_list();
+  $languages = array('en' => $languages['en']);
   $translate = count($languages) > 1;
   $form['label']['#title'] = t('Administrative label');
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
@@ -426,6 +429,12 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     drupal_write_record('activity_log_templates', $record);
   }
   $form_state['values']['settings']['tid'] = $record->tid;
+  // Tell i18n we changed the string
+  if (module_exists('i18nstrings')) {
+    $langcode = 'en';//language_default('language');
+    i18nstrings_update('activity_log:template:'. $record->tid, $v['templates'][$langcode]['template']);
+    i18nstrings_update('activity_log:group_template:'. $record->tid, $v['grouping']['templates'][$langcode]['template']);
+  }
   // If switching values means that we've now abandoned an action name, remove it.
   if (isset($name->pid) && $name->pid != $pid) {
     db_query("
