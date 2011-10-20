@@ -843,6 +843,19 @@ function activity_log_log_action($settings) {
   if (in_array(0, $viewers)) {
     $viewers = array(0);
   }
+  // If we're dealing with a private status update, only let the sender and recipient see it.
+  // See https://drupal.org/node/1297308#comment-5109956 for why we don't also show the activity to users with the "view all private status updates" permission.
+  if ($target['type'] == 'facebook_status') {
+    if (!isset($status)) {
+      $status = facebook_status_load($target['id']);
+    }
+    if ($status->private) {
+      $viewers = array($status->sender);
+      if ($status->type == 'user') {
+        $viewers[] = $status->recipient;
+      }
+    }
+  }
   // Store the event record.
   if (isset($event->og)) {
     unset($event->og);
