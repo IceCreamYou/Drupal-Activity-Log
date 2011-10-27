@@ -331,6 +331,10 @@ function _activity_log_rebuild_templates() {
       VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', %d, '%s')
     ", $record);
   }
+  // Rebuild translations.
+  if (module_exists('i18nstrings')) {
+    activity_log_locale_refresh();
+  }
   return count($rules);
 }
 
