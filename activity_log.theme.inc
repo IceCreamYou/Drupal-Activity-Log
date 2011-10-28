@@ -227,7 +227,7 @@ function activity_log_evaluate_record($record) {
   if (count($record->events) === 1) {
     return $template;
   }
-  $collection = array_unique($collection);
+  $collection = array_values(array_unique($collection)); // See https://drupal.org/node/1325350 for why we need array_values()
   return str_replace(
     array('[names]', '[collection]', '[count]'),
     array(
