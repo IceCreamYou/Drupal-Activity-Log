@@ -1721,7 +1721,7 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                 'active group relationships 1 acting user' => 0,
                 'active group relationships 1 custom user' => 0,
               ),
-              'stream_owner_id' => '[status:recipient-id]',
+              'stream_owner_id' => '',
               'stream_owner_type' => 'user',
               'viewer_entity_group' => 
               array (
@@ -2568,7 +2568,7 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                 'active group relationships 1 acting user' => 0,
                 'active group relationships 1 custom user' => 0,
               ),
-              'stream_owner_id' => '[status:recipient-id]',
+              'stream_owner_id' => '',
               'stream_owner_type' => 'user',
               'viewer_entity_group' => 
               array (
