@@ -421,8 +421,8 @@ function activity_log_locale($op = 'groups', $group = NULL) {
       return array('activity_log' => t('Activity Log'));
 
     case 'info':
-      $info['taxonomy']['refresh callback'] = 'activity_log_locale_refresh';
-      $info['taxonomy']['format'] = FALSE;
+      $info['activity_log']['refresh callback'] = 'activity_log_locale_refresh';
+      $info['activity_log']['format'] = FALSE;
       return $info;
   }
 }
