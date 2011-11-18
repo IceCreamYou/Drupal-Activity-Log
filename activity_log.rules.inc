@@ -840,7 +840,7 @@ function activity_log_log_action($settings) {
   $owners = $results['stream_owner'];
   $viewers = array_unique($results['viewer']['user']);
   // If "everyone" is a valid viewer, we don't need to save records for specific users.
-  if (in_array(0, $viewers)) {
+  if (in_array(0, $viewers, TRUE)) {
     $viewers = array(0);
   }
   // If we're dealing with a private status update, only let the sender and recipient see it.
