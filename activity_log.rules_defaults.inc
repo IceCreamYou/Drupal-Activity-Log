@@ -48,7 +48,7 @@ function activity_log_rules_defaults_node_insert() {
         0 => 'activity_log',
         1 => 'node',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' =>
       array (
         0 => 
@@ -608,7 +608,7 @@ function activity_log_rules_defaults_node_insert_og() {
         1 => 'node',
         2 => 'og',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
         0 => 
@@ -1322,7 +1322,7 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
         0 => 'activity_log',
         1 => 'facebook_status',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
         0 => 
@@ -1698,7 +1698,7 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
         0 => 'activity_log',
         1 => 'facebook_status',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
         0 => 
@@ -2237,7 +2237,7 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
         0 => 'activity_log',
         1 => 'fbsmp',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
         0 => 
@@ -2603,7 +2603,7 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
         0 => 'activity_log',
         1 => 'fbsmp',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
         0 => 
@@ -3138,7 +3138,7 @@ function activity_log_rules_defaults_og_join() {
         0 => 'activity_log',
         1 => 'og',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
       ),
@@ -3640,7 +3640,7 @@ function activity_log_rules_defaults_ur_request() {
         0 => 'activity_log',
         1 => 'user_relationships',
       ),
-      '#status' => 'custom',
+      '#status' => 'default',
       '#conditions' => 
       array (
       ),
