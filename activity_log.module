@@ -331,10 +331,6 @@ function _activity_log_rebuild_templates() {
       VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', %d, '%s')
     ", $record);
   }
-  // Rebuild translations.
-  if (module_exists('i18nstrings')) {
-    activity_log_locale_refresh();
-  }
   return count($rules);
 }
 
@@ -406,50 +402,6 @@ function activity_log_activity_log_display_types() {
   return array(
     'web' => t('Web stream'),
   );
-}
-
-//==================
-// I18N INTEGRATION
-//==================
-
-/**
- * Implementation of hook_locale().
- */
-function activity_log_locale($op = 'groups', $group = NULL) {
-  switch ($op) {
-    case 'groups':
-      return array('activity_log' => t('Activity Log'));
-
-    case 'info':
-      $info['activity_log']['refresh callback'] = 'activity_log_locale_refresh';
-      $info['activity_log']['format'] = FALSE;
-      return $info;
-  }
-}
-
-/**
- * i18n callback to refresh all strings at once.
- */
-function activity_log_locale_refresh() {
-  $rules = array();
-  foreach (_rules_get_rule_sets() as $key => $event) {
-    if (strpos($key, 'event_') === 0) {
-      foreach ($event['rules'] as $name => $info) {
-        foreach ($info['#actions'] as $action) {
-          if ($action['#name'] == 'activity_log_log_action' && isset($action['#settings']['tid'])) {
-            $rules[$action['#settings']['tid']] = $action['#settings'];
-          }
-        }
-      }
-    }
-  }
-  $langcode = 'en';//language_default('language');
-  ksort($rules);
-  foreach ($rules as $tid => $v) {
-    // call i18nstrings_update($name, $string) on each
-    i18nstrings_update('activity_log:template:'. $tid, $v['templates'][$langcode]['template']);
-    i18nstrings_update('activity_log:group_template:'. $tid, $v['grouping']['templates'][$langcode]['template']);
-  }
 }
 
 //====================

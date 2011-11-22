@@ -94,8 +94,8 @@ function activity_log_rules_defaults_node_insert() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -106,6 +106,11 @@ function activity_log_rules_defaults_node_insert() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
@@ -121,6 +126,10 @@ function activity_log_rules_defaults_node_insert() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -204,13 +213,13 @@ function activity_log_rules_defaults_node_insert() {
                   0 => 'author',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -222,8 +231,8 @@ function activity_log_rules_defaults_node_insert() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -244,6 +253,11 @@ function activity_log_rules_defaults_node_insert() {
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
               ),
+              'und' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
             ),
             'grouping' => 
             array (
@@ -255,6 +269,10 @@ function activity_log_rules_defaults_node_insert() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -337,13 +355,13 @@ function activity_log_rules_defaults_node_insert() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -355,8 +373,8 @@ function activity_log_rules_defaults_node_insert() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -373,8 +391,8 @@ function activity_log_rules_defaults_node_insert() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -394,8 +412,8 @@ function activity_log_rules_defaults_node_insert() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -406,6 +424,11 @@ function activity_log_rules_defaults_node_insert() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
@@ -421,6 +444,10 @@ function activity_log_rules_defaults_node_insert() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -503,13 +530,13 @@ function activity_log_rules_defaults_node_insert() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -521,8 +548,8 @@ function activity_log_rules_defaults_node_insert() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -654,8 +681,8 @@ function activity_log_rules_defaults_node_insert_og() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -666,6 +693,11 @@ function activity_log_rules_defaults_node_insert_og() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in <a href="[node:og-url]">[node:ogname]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in <a href="[node:og-url]">[node:ogname]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
@@ -681,6 +713,10 @@ function activity_log_rules_defaults_node_insert_og() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -764,13 +800,13 @@ function activity_log_rules_defaults_node_insert_og() {
                   0 => 'author',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -782,8 +818,8 @@ function activity_log_rules_defaults_node_insert_og() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -803,8 +839,8 @@ function activity_log_rules_defaults_node_insert_og() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -815,6 +851,11 @@ function activity_log_rules_defaults_node_insert_og() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
@@ -830,6 +871,10 @@ function activity_log_rules_defaults_node_insert_og() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -912,13 +957,13 @@ function activity_log_rules_defaults_node_insert_og() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -930,8 +975,8 @@ function activity_log_rules_defaults_node_insert_og() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -953,6 +998,11 @@ function activity_log_rules_defaults_node_insert_og() {
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in <a href="[node:og-url]">[node:ogname]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
               ),
+              'und' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in <a href="[node:og-url]">[node:ogname]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
             ),
             'grouping' => 
             array (
@@ -964,6 +1014,10 @@ function activity_log_rules_defaults_node_insert_og() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -1046,13 +1100,13 @@ function activity_log_rules_defaults_node_insert_og() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -1064,8 +1118,8 @@ function activity_log_rules_defaults_node_insert_og() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -1082,8 +1136,8 @@ function activity_log_rules_defaults_node_insert_og() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
         ),
@@ -1101,8 +1155,8 @@ function activity_log_rules_defaults_node_insert_og() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -1113,6 +1167,11 @@ function activity_log_rules_defaults_node_insert_og() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in <a href="[node:og-url]">[node:ogname]</a></div>
+<div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[author:picture]</div><div class="activity-log-indent"><div class="activity-log-content"><a href="[author:account-url]">[author:user]</a> added the [node:type-name] <a href="[node:node-url]">[node:title]</a> in <a href="[node:og-url]">[node:ogname]</a></div>
 <div class="activity-log-time"><a href="[node:node-url]">[node:small]</a></div></div>',
@@ -1128,6 +1187,10 @@ function activity_log_rules_defaults_node_insert_og() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -1210,13 +1273,13 @@ function activity_log_rules_defaults_node_insert_og() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'node',
                   1 => 'author',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -1228,8 +1291,8 @@ function activity_log_rules_defaults_node_insert_og() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -1305,6 +1368,10 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               array (
                 'template' => '[status:status-themed]',
               ),
+              'und' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
             ),
             'grouping' => 
             array (
@@ -1316,6 +1383,10 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -1403,12 +1474,12 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -1420,8 +1491,8 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -1438,8 +1509,8 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -1459,8 +1530,8 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -1471,6 +1542,10 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
+              'und' => 
               array (
                 'template' => '[status:status-themed]',
               ),
@@ -1485,6 +1560,10 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -1572,12 +1651,12 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -1589,8 +1668,8 @@ function activity_log_rules_defaults_facebook_status_insert_user_self() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -1668,8 +1747,8 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -1680,6 +1759,10 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
+              'und' => 
               array (
                 'template' => '[status:status-themed]',
               ),
@@ -1694,6 +1777,10 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -1782,12 +1869,12 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -1799,8 +1886,8 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -1821,6 +1908,11 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                 'template' => '<div class="activity-log-picture">[status:sender-picture]</div><div class="activity-log-indent"><div class="activity-log-content">[status:sender-themed] wrote a message to [status:recipient-link]</div>
 <div class="activity-log-time"><a href="[status:status-url]">[status:created]</a></div></div>',
               ),
+              'und' => 
+              array (
+                'template' => '<div class="activity-log-picture">[status:sender-picture]</div><div class="activity-log-indent"><div class="activity-log-content">[status:sender-themed] wrote a message to [status:recipient-link]</div>
+<div class="activity-log-time"><a href="[status:status-url]">[status:created]</a></div></div>',
+              ),
             ),
             'grouping' => 
             array (
@@ -1832,6 +1924,10 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -1919,12 +2015,12 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -1936,8 +2032,8 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -1954,8 +2050,8 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
         ),
@@ -1974,8 +2070,8 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -1986,6 +2082,10 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
+              'und' => 
               array (
                 'template' => '[status:status-themed]',
               ),
@@ -2000,6 +2100,10 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -2086,12 +2190,12 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -2103,8 +2207,8 @@ function activity_log_rules_defaults_facebook_status_insert_other() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -2179,6 +2283,10 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               array (
                 'template' => '[status:status-themed]',
               ),
+              'und' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
             ),
             'grouping' => 
             array (
@@ -2190,6 +2298,10 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -2272,12 +2384,12 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -2289,8 +2401,8 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -2307,8 +2419,8 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -2328,8 +2440,8 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -2340,6 +2452,10 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
+              'und' => 
               array (
                 'template' => '[status:status-themed]',
               ),
@@ -2354,6 +2470,10 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -2436,12 +2556,12 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -2453,8 +2573,8 @@ function activity_log_rules_defaults_fbsmp_insert_user_self() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -2530,6 +2650,10 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               array (
                 'template' => '[status:status-themed]',
               ),
+              'und' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
             ),
             'grouping' => 
             array (
@@ -2541,6 +2665,10 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -2629,12 +2757,12 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -2646,8 +2774,8 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -2664,8 +2792,8 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -2685,8 +2813,8 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -2697,6 +2825,11 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[status:sender-picture]</div><div class="activity-log-indent"><div class="activity-log-content">[status:sender-themed] sent a [attachment:attachment-type] to [status:recipient-link]</div>
+<div class="activity-log-time"><a href="[status:status-url]">[status:created]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[status:sender-picture]</div><div class="activity-log-indent"><div class="activity-log-content">[status:sender-themed] sent a [attachment:attachment-type] to [status:recipient-link]</div>
 <div class="activity-log-time"><a href="[status:status-url]">[status:created]</a></div></div>',
@@ -2712,6 +2845,10 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -2794,13 +2931,13 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                   0 => 'status',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => 'attachment',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -2812,8 +2949,8 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -2832,6 +2969,10 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               array (
                 'template' => '[status:status-themed]',
               ),
+              'und' => 
+              array (
+                'template' => '[status:status-themed]',
+              ),
             ),
             'grouping' => 
             array (
@@ -2843,6 +2984,10 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '',
+                ),
+                'und' => 
                 array (
                   'template' => '',
                 ),
@@ -2929,12 +3074,12 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'status',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -2946,8 +3091,8 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -2964,8 +3109,8 @@ function activity_log_rules_defaults_fbsmp_insert_other() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -3012,6 +3157,10 @@ function activity_log_rules_defaults_og_join() {
               array (
                 'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the group <a href="[group:node-url]">[group:title]</a></div></div>',
               ),
+              'und' => 
+              array (
+                'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the group <a href="[group:node-url]">[group:title]</a></div></div>',
+              ),
             ),
             'grouping' => 
             array (
@@ -3023,6 +3172,10 @@ function activity_log_rules_defaults_og_join() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the groups [collection]</div></div>',
+                ),
+                'und' => 
                 array (
                   'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the groups [collection]</div></div>',
                 ),
@@ -3107,13 +3260,13 @@ function activity_log_rules_defaults_og_join() {
                   0 => 'account',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'account',
                   1 => 'group',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => 'account',
                   1 => ':global',
@@ -3126,8 +3279,8 @@ function activity_log_rules_defaults_og_join() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -3144,8 +3297,8 @@ function activity_log_rules_defaults_og_join() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -3164,8 +3317,8 @@ function activity_log_rules_defaults_og_join() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -3176,6 +3329,10 @@ function activity_log_rules_defaults_og_join() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the group <a href="[group:node-url]">[group:title]</a></div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the group <a href="[group:node-url]">[group:title]</a></div></div>',
               ),
@@ -3190,6 +3347,10 @@ function activity_log_rules_defaults_og_join() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the groups [collection]</div></div>',
+                ),
+                'und' => 
                 array (
                   'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the groups [collection]</div></div>',
                 ),
@@ -3274,13 +3435,13 @@ function activity_log_rules_defaults_og_join() {
                   0 => 'account',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'account',
                   1 => 'group',
                   2 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => 'account',
                   1 => ':global',
@@ -3293,8 +3454,8 @@ function activity_log_rules_defaults_og_join() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -3316,8 +3477,8 @@ function activity_log_rules_defaults_og_join() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -3328,6 +3489,10 @@ function activity_log_rules_defaults_og_join() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the group</div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture">[account:picture]</div><div class="activity-log-indent"><div class="activity-log-content">[account:user] joined the group</div></div>',
               ),
@@ -3342,6 +3507,10 @@ function activity_log_rules_defaults_og_join() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '<div class="activity-log-content">[names] joined the group</div>',
+                ),
+                'und' => 
                 array (
                   'template' => '<div class="activity-log-content">[names] joined the group</div>',
                 ),
@@ -3424,12 +3593,12 @@ function activity_log_rules_defaults_og_join() {
                 array (
                   0 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'account',
                   1 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => ':global',
                 ),
@@ -3441,8 +3610,8 @@ function activity_log_rules_defaults_og_join() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -3490,6 +3659,10 @@ function activity_log_rules_defaults_ur_request() {
               array (
                 'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
               ),
+              'und' => 
+              array (
+                'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
+              ),
             ),
             'grouping' => 
             array (
@@ -3501,6 +3674,10 @@ function activity_log_rules_defaults_ur_request() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
+                ),
+                'und' => 
                 array (
                   'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
                 ),
@@ -3584,14 +3761,14 @@ function activity_log_rules_defaults_ur_request() {
                   0 => 'requester',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'requester',
                   1 => 'requestee',
                   2 => 'relationship',
                   3 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => 'requester',
                   1 => 'relationship',
@@ -3605,8 +3782,8 @@ function activity_log_rules_defaults_ur_request() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),
@@ -3623,8 +3800,8 @@ function activity_log_rules_defaults_ur_request() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#weight' => 0,
@@ -3644,8 +3821,8 @@ function activity_log_rules_defaults_ur_request() {
               2 => 'visibility|stream_owner_id',
               3 => 'visibility|viewer_id',
               4 => 'acting_uid',
-              5 => 'templates|en|template',
-              6 => 'grouping|templates|en|template',
+              5 => 'templates|und|template',
+              6 => 'grouping|templates|und|template',
             ),
           ),
           '#name' => 'activity_log_log_action',
@@ -3656,6 +3833,10 @@ function activity_log_rules_defaults_ur_request() {
             'templates' => 
             array (
               'en' => 
+              array (
+                'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
+              ),
+              'und' => 
               array (
                 'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [requestee:user]</div></div>',
               ),
@@ -3670,6 +3851,10 @@ function activity_log_rules_defaults_ur_request() {
               'templates' => 
               array (
                 'en' => 
+                array (
+                  'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
+                ),
+                'und' => 
                 array (
                   'template' => '<div class="activity-log-picture"></div><div class="activity-log-indent"><div class="activity-log-content">[requester:user] [relationship:relationship-name]ed [collection]</div></div>',
                 ),
@@ -3753,14 +3938,14 @@ function activity_log_rules_defaults_ur_request() {
                   0 => 'requester',
                   1 => ':global',
                 ),
-                'templates|en|template' => 
+                'templates|und|template' => 
                 array (
                   0 => 'requester',
                   1 => 'requestee',
                   2 => 'relationship',
                   3 => ':global',
                 ),
-                'grouping|templates|en|template' => 
+                'grouping|templates|und|template' => 
                 array (
                   0 => 'requester',
                   1 => 'relationship',
@@ -3774,8 +3959,8 @@ function activity_log_rules_defaults_ur_request() {
                 'visibility|stream_owner_id' => true,
                 'visibility|viewer_id' => true,
                 'acting_uid' => true,
-                'templates|en|template' => true,
-                'grouping|templates|en|template' => true,
+                'templates|und|template' => true,
+                'grouping|templates|und|template' => true,
               ),
             ),
           ),

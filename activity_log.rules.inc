@@ -13,10 +13,7 @@
  * The form callback for the activity logging action.
  */
 function activity_log_log_action_form($settings, &$form) {
-  //$default_language = language_default();
-  //$languages = array($default_language->language => $default_language);
   $languages = language_list();
-  $languages = array('en' => $languages['en']);
   $translate = count($languages) > 1;
   $form['label']['#title'] = t('Administrative label');
   drupal_add_js(drupal_get_path('module', 'activity_log') .'/activity_log.admin.js');
@@ -67,6 +64,10 @@ function activity_log_log_action_form($settings, &$form) {
   ) : array(
     '#prefix' => '<div id="edit-settings-templates-fieldset">',
     '#suffix' => '</div>',
+  );
+  $form['settings']['templates']['und']['template'] = array(
+    '#type' => 'value',
+    '#value' => '',
   );
   foreach ($languages as $name => $lang) {
     if (!isset($settings['templates'][$name])) {
@@ -152,6 +153,10 @@ function activity_log_log_action_form($settings, &$form) {
   ) : array(
     '#prefix' => '<div id="edit-settings-grouping-templates-fieldset">',
     '#suffix' => '</div>',
+  );
+  $form['settings']['grouping']['templates']['und']['template'] = array(
+    '#type' => 'value',
+    '#value' => '',
   );
   foreach ($languages as $name => $lang) {
     if (!isset($settings['grouping']['templates'][$name])) {
@@ -383,6 +388,19 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
  */
 function activity_log_rules_admin_form_submit_before($form, &$form_state) {
   $v = $form_state['values']['settings'];
+  // Concatenate the language templates into the placeholder so Rules will figure out what input evaluators to use.
+  $und = $v['templates']['und']['template'];
+  foreach ($v['templates'] as $lang => $data) {
+    $und .= $data['template'] .' ';
+  }
+  $und_group = $v['grouping']['templates']['und']['template'];
+  foreach ($v['grouping']['templates'] as $lang => $data) {
+    $und_group .= $data['template'] .' ';
+  }
+  $form_state['values']['settings']['templates']['und']['template'] = $und;
+  $v['templates']['und']['template'] = $und;
+  $form_state['values']['settings']['grouping']['templates']['und']['template'] = $und_group;
+  $v['grouping']['templates']['und']['template'] = $und_group;
   // If we're updating, find the existing template and public name.
   $rule = $form_state['proxy']->_rule_name;
   $pid = 0;
@@ -429,12 +447,6 @@ function activity_log_rules_admin_form_submit_before($form, &$form_state) {
     drupal_write_record('activity_log_templates', $record);
   }
   $form_state['values']['settings']['tid'] = $record->tid;
-  // Tell i18n we changed the string
-  if (module_exists('i18nstrings')) {
-    $langcode = 'en';//language_default('language');
-    i18nstrings_update('activity_log:template:'. $record->tid, $v['templates'][$langcode]['template']);
-    i18nstrings_update('activity_log:group_template:'. $record->tid, $v['grouping']['templates'][$langcode]['template']);
-  }
   // If switching values means that we've now abandoned an action name, remove it.
   if (isset($name->pid) && $name->pid != $pid) {
     db_query("
@@ -724,10 +736,14 @@ function activity_log_input_evaluator_process_help($variables) {
  */
 function activity_log_rules_action_info() {
   $eval_input = array('placeholder', 'grouping|group_summary', 'visibility|stream_owner_id', 'visibility|viewer_id', 'acting_uid');
+  $eval_input[] = 'templates|und|template';
+  $eval_input[] = 'grouping|templates|und|template';
+  /*
   foreach (language_list() as $name => $lang) {
     $eval_input[] = 'templates|'. $name .'|template';
     $eval_input[] = 'grouping|templates|'. $name .'|template';
   }
+   */
   return array(
     'activity_log_log_action' => array(
       'label' => t('Log activity'),
