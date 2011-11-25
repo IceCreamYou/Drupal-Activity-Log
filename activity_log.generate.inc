@@ -377,7 +377,7 @@ function activity_log_regenerate_statuses($age, $offset) {
  * Triggers the og_user_insert Rules event for group joins.
  */
 function activity_log_regenerate_og_join($age, $offset) {
-  return _activity_log_regenerate_object('og_user_insert', "SELECT nid, uid FROM {og_uid} WHERE is_active = 1 AND created > %d", $age, $offset);
+  return _activity_log_regenerate_object('og_user_insert', "SELECT nid, uid, created FROM {og_uid} WHERE is_active = 1 AND created > %d", $age, $offset);
 }
 
 /**
