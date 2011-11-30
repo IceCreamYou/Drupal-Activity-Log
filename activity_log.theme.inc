@@ -212,7 +212,9 @@ function activity_log_evaluate_record($record) {
     // Reconstruct the Rules State as if the event was triggered just now.
     $state = $event->id_map['state'];
     foreach ($state['variables'] as $type => $info) {
-      $info->data->_data = activity_log_get_variable($type, $event->id_map);
+      if (drupal_substr($type, -10) != '_unchanged') {
+        $info->data->_data = activity_log_get_variable($type, $event->id_map);
+      }
     }
     // Apply the Rules input evaluators.
     rules_apply_input_evaluators($element, $state);
