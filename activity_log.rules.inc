@@ -368,6 +368,8 @@ function activity_log_form_alter(&$form, &$form_state, $form_id) {
       if (isset($form['settings']['placeholder']['#value']) && strpos($form['settings']['placeholder']['#value'], ACTIVITY_LOG_DELIMITER) === 0) {
         $form['settings']['placeholder']['#value'] = drupal_substr($form['settings']['placeholder']['#value'], drupal_strlen(ACTIVITY_LOG_DELIMITER));
       }
+      // Store the event we're responding to in case we need it later.
+      $form['settings']['rules_event'] = array('#type' => 'value', '#value' => $form_state['proxy']->_rule['#set']);
     }
     // Remove the help for our input evaluator (because it's internal, not user-facing).
     unset($form['input_help']['activity_log_input_evaluator_process']);
@@ -776,9 +778,14 @@ function activity_log_log_action($settings) {
   if (empty($settings['visibility']['viewer_id'])) {
     $settings['visibility']['viewer_id'] = $user->uid;
   }
+  $created_time = _activity_log_action_timestamp();
+  // Normally we use the entity created time, but we want the current time for node views.
+  if (isset($settings['rules_event']) && $settings['rules_event'] == 'event_node_view') {
+    $created_time = $time;
+  }
   $event = (object) array(
     'tid' => $settings['tid'],
-    'created' => _activity_log_action_timestamp(),
+    'created' => $created_time,
     'acting_uid' => $settings['acting_uid'],
     'target_id' => $target['id'],
     'target_type' => $target['type'],
