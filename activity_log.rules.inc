@@ -871,6 +871,15 @@ function activity_log_log_action($settings) {
         $viewers[] = $status->recipient;
       }
     }
+    // Don't record activity for blank status messages.
+    // The semantic way to do this is by adding a condition to the default
+    // Rules, but that leaves open the possibility of people adding their own
+    // activity templates and forgetting about this condition. (Also, that's
+    // more work....) FBSS never shows blank messages in status streams, so
+    // neither should we.
+    if (!$status->message) {
+      return;
+    }
   }
   // Store the event record.
   if (isset($event->og)) {
