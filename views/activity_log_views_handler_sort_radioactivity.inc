@@ -35,6 +35,7 @@ class activity_log_views_handler_sort_radioactivity extends views_handler_sort {
   function ensure_my_table() {
     if (!isset($this->table_alias)) {
       $join = $this->get_join();
+      $join->left_field = 'mid';
       $join->type = drupal_strtoupper($this->options['join_type']);
       $this->table_alias = $this->query->ensure_table($this->table, $this->relationship, $join);
     }
