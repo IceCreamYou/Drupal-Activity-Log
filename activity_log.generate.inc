@@ -413,11 +413,10 @@ function _activity_log_regenerate_object($event, $query, $age, $offset, $timeles
     elseif (strpos($event, 'flag_flagged_') === 0) {
       $object = array('flag' => $object, 'flag_content_id' => $object->content_id, 'flagging_user' => activity_log_user_load($object->uid));
     }
-    elseif ($event == 'facebook_status_save' && module_exists('fbsmp') && $object->attachment = fbsmp_load($object->sid)) {
+    if ($event == 'facebook_status_save' && module_exists('fbsmp') && $object->attachment = fbsmp_load($object->sid)) {
       rules_invoke_event('fbsmp_add_status', $object, $object->attachment);
-      continue;
     }
-    if ($event == 'facebook_status_tags_user_was_tagged') {
+    elseif ($event == 'facebook_status_tags_user_was_tagged') {
       $account = activity_log_user_load($object->rid);
       rules_invoke_event('facebook_status_tags_user_was_tagged', $object, $account);
     }
