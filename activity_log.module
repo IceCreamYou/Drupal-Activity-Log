@@ -335,6 +335,33 @@ function _activity_log_rebuild_templates() {
 }
 
 /**
+ * Panic! Rebuild everything!
+ *
+ * "One can relish the varied idiocy of human action during a panic to the
+ * full, for,  while it is a time of great tragedy, nothing is being lost but
+ * money." --John Kenneth Galbraith
+ *
+ * Calling this function:
+ * - Clears the Rules cache
+ * - Rebuilds the activity message templates
+ * - Clears the activity message caches
+ * - Optionally regenerates activity for a specified period of time
+ *
+ * @param $regen_last_secs
+ *   (Optional) Activity messages will be regenerated for this number of
+ *   seconds. If not given, no activity is regenerated.
+ */
+function activity_log_rebuild_everything($regen_last_secs = NULL) {
+  rules_clear_cache(); // Clear the Rules cache.
+  _activity_log_rebuild_templates(); // Rebuild message templates from Rules.
+  activity_log_clear_message_cache(); // Clear message caches.
+  if (is_numeric($regen_last_secs) && $regen_last_secs > 0) {
+    module_load_include('inc', 'activity_log', 'activity_log.generate');
+    activity_log_regenerate(array(), time() - $regen_last_secs); // Regenerate activity.
+  }
+}
+
+/**
  * Get or set the timestamp for the current activity message.
  */
 function _activity_log_action_timestamp($value = NULL) {
