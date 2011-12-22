@@ -341,12 +341,3 @@ function activity_log_uninstall() {
     variable_del('facebook_status_user_other_view');
   }
 }
-
-/**
- * Implementation of hook_update_N().
- */
-function activity_log_update_6101() {
-  // Regenerate activity from the last 14 days.
-  activity_log_rebuild_everything(1209600);
-  return array();
-}
