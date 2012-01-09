@@ -955,12 +955,14 @@ function activity_log_log_action($settings) {
           SET aids = CONCAT(aids, '%s'), last_updated = %d, cached = ''
           WHERE mid IN (". db_placeholders($mids) .")"
         , array_merge(array($event->aid .',', $event->created), $mids));
+        break;
       case 'mssql': // Note: MSSQL requires an explicit CAST if any of the concatenation arguments are not strings.
         db_query("
           UPDATE {activity_log_messages}
           SET aids = (aids + '%s'), last_updated = %d, cached = ''
           WHERE mid IN (". db_placeholders($mids) .")"
         , array_merge(array($event->aid .',', $event->created), $mids));
+        break;
       case 'pgsql':
       default:
         db_query("
