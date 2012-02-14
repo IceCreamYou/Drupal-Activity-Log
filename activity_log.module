@@ -495,6 +495,11 @@ function activity_log_token_values($type, $object = NULL, $options = array()) {
   }
   if ($type == 'user') {
     $account = empty($object) ? activity_log_user_load($GLOBALS['user']->uid) : $object;
+    // Make Activity Log user avatars match the size of Facebook-style Statuses
+    // message avatars.
+    if (module_exists('imagecache_profiles') && module_exists('facebook_status')) {
+      $account->imagecache_preset = variable_get('facebook_status_imagecache_preset', variable_get('user_picture_imagecache_profiles_default', ''));
+    }
     $values['picture'] = theme('user_picture', $account);
     $values['username-themed'] = theme('username', $account);
   }
